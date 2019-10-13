@@ -25,7 +25,7 @@
             </div>
             <div class="right-content">
                 <div class="right-content-bg">
-                    <router-view ref="child"></router-view>
+                    <router-view ref="child" @func="playSong"></router-view>
                 </div>
             </div>
             <div class="bottom-bar">
@@ -33,17 +33,18 @@
                 ref="audio"
                 @timeupdate="onTimeupdate"
                 @loadedmetadata="onLoadedmetadata">
-                    <source src='../assets/audio/test.mp3' type=audio/mp3> 
+                    <source :src='audio.url' type=audio/mp3> 
                 </audio>
                 <div class="song-field">
-                <img src="../assets/images/song.jpg"  alt="">
+                <div  class="default-img" v-show="!flag"></div>
+                <img  :src='audio.albumPicUrl' alt="" v-show="flag">
                 <div class="song-content">
-                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;">Wish You Were Here</p>
-                    <p style="opacity: 0.5;">Pink Floyd</p>
+                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;" v-text="audio.name"></p>
+                    <p style="opacity: 0.5;" v-text="audio.art"></p>
                     <el-slider
                     style="margin-left:10px;"
                     v-model="sliderTime"
-                    :max="audio.duration"
+                    :max='audio.duration'
                     @change="changeTime"
                     :format-tooltip="formatTooltip"
                     >
@@ -92,12 +93,16 @@ export default {
             btnPlay:true,
             btnVol:true,
             audio:{
-                currentSong:'../assets/audio/test.mp3',
+                url:'',
+                albumPicUrl:'',
+                name:'----------------',
+                art:'--------',
                 duration:'',
                 currentTime:'0',
                 isPlaying:false,
                 volValue: 100, 
             },
+            flag:false,
             sliderTime:'',
             keyWord:''
         }
@@ -106,6 +111,17 @@ export default {
         RangeSlider
     },
     methods:{
+        //播放
+        playSong(url,name,art,albumPicUrl){
+            this.flag = true
+            this.$refs.audio.src = url
+            this.audio.albumPicUrl = albumPicUrl
+            this.audio.name = name
+            this.audio.art = art
+            this.$refs.audio.play()
+            this.audio.isPlaying = true
+            this.btnPlay = false
+        },
         //自动补零
         refixInteger(num, m) {
             return (Array(m).join(0) + num).slice(-m);
@@ -318,11 +334,20 @@ export default {
         float: left;
         width:80px;
         height:80px;
-        background: url(../assets/images/logo.png) no-repeat;
         background-size: 100% ;
         border: none;
         box-shadow: 0px 2px 5px -1px grey;
         margin: 10px;
+        margin-top: 12px; 
+    }
+    .song-field .default-img{
+        float: left;
+        width:80px;
+        height:80px;
+        background: url(../assets/images/cd.png) no-repeat;
+        background-size: 100% ;
+        margin: 10px;
+        margin-top: 12px; 
     }
     .song-field .song-content{
         float: left;

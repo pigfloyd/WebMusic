@@ -33,11 +33,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(item,index) in arr" :key="index">
-                            <td><img :src='getImgUrl(item.album.picId)' alt=""></td>
+                        <tr v-for="(item,index) in arr" :key="index"
+                         @mouseover="mouseOver(index)"
+                         @mouseleave="mouseLeave">
+                            <td>
+                                <img src="../../assets/images/cd.png" alt="" v-show="!(index==current)">
+                                <i class="fa fa-play fa-lg play-btn" v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.id)"></i>
+                            </td>
                             <td v-text="item.name" ></td>
                             <td v-text="item.artists[0].name"></td>
                             <td v-text="item.album.name"></td>
+
                         </tr>
                     </tbody>
                 </table>
@@ -56,20 +62,19 @@ export default {
             arr:'',
             flag: false,
             showFlag:false,
-            picUrl:'http://p4.music.126.net/JzNK4a5PjjPIXAgVlqEc5Q==/',
-            
-            picUrl2:'.jpg?param=50y50'
+            current:'-1'
         }
     },
     mounted () { 
         this.$refs.search.focus();
     },
     methods: {
+        //搜索歌曲
         search(){
             this.showFlag = true
+            this.flag = false
             this.$axios.get('/search?keywords=' + this.keyWord)
             .then((res) => {
-                console.log(res.data.result.songs)
                 this.showFlag = false
                 this.arr = res.data.result.songs
                 this.flag = true
@@ -79,7 +84,33 @@ export default {
             })
         },
         getImgUrl(id){
-            return this.picUrl + id + this.picUrl2;
+            return this.picUrl + id + this.picUrl2
+        },
+        mouseOver(index){
+            this.current = index
+        },
+        mouseLeave(){
+            this.current = -1
+        },
+        //播放歌曲
+        play(id,name,art,albumId){
+            var albumPicUrl
+            this.$axios.get('/album?id=' + albumId)
+            //搜索对应的专辑图片
+            .then((res) => {
+                albumPicUrl = res.data.album.picUrl
+            })
+            .catch((err) => {
+            console.log(err)
+            })
+            this.$axios.get('/song/url?id=' + id)
+            //搜索对应的专辑图片
+            .then((res) => {
+                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl)
+            })
+            .catch((err) => {
+            console.log(err)
+            })
         }
 
     },
@@ -124,6 +155,10 @@ export default {
         background-color: #fff;
         border-radius: 4px;
         box-shadow: 0 0px 3px 0px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);        
+    }
+    .play-btn{
+        color: black;
+        cursor: pointer;
     }
     
 </style>
