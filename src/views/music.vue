@@ -6,7 +6,7 @@
                     <input type="text" class="form-control" placeholder="搜索歌曲" v-model="keyWord">
                     <div class="input-group-prepend">
                         <router-link 
-                        :to="{ name:'search', params:{s:keyWord}}"
+                        to="/music/search"
                         class="input-group-text"
                         style="cursor: pointer;border-radius:0px 4px 4px 0px;border-left:0px;text-decoration:none;">
                             <i class="fa fa-search " aria-hidden="true"></i>
@@ -37,7 +37,9 @@
                 </audio>
                 <div class="song-field">
                 <div  class="default-img" v-show="!flag"></div>
-                <img  :src='audio.albumPicUrl' alt="" v-show="flag">
+                <router-link :to="'song-detail/'+ audio.id">
+                    <img  :src='audio.albumPicUrl' alt="" v-show="flag">
+                </router-link>
                 <div class="song-content">
                     <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;" v-text="audio.name"></p>
                     <p style="opacity: 0.5;" v-text="audio.art"></p>
@@ -93,6 +95,7 @@ export default {
             btnPlay:true,
             btnVol:true,
             audio:{
+                id:'',
                 url:'',
                 albumPicUrl:'',
                 name:'----------------',
@@ -112,12 +115,13 @@ export default {
     },
     methods:{
         //播放
-        playSong(url,name,art,albumPicUrl){
+        playSong(url,name,art,albumPicUrl,id){
             this.flag = true
             this.$refs.audio.src = url
             this.audio.albumPicUrl = albumPicUrl
             this.audio.name = name
             this.audio.art = art
+            this.audio.id = id
             this.$refs.audio.play()
             this.audio.isPlaying = true
             this.btnPlay = false

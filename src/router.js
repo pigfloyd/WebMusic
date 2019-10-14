@@ -23,7 +23,8 @@ var router = new Router({
             component:music,
             children:[
                 {
-                    path:'song-detail',
+                    path:'song-detail/:id',
+                    name:'song-detail',
                     component:songDetail
                 },
                 {

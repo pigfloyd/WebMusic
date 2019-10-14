@@ -104,9 +104,8 @@ export default {
             console.log(err)
             })
             this.$axios.get('/song/url?id=' + id)
-            //搜索对应的专辑图片
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl)
+                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl,id)
             })
             .catch((err) => {
             console.log(err)

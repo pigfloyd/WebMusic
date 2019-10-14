@@ -11,15 +11,8 @@
         </div>
         <div class="right">
             <textarea ref="lrc" id="lrc_content" cols="30" style="display: none">
-                [ar:Pink Floyd]
-                [al:Wish You Were Here]
-                [ti:Wish You Were Here]
-                [au:Pink Floyd]
-                [length:05:34.79]
-                [by:Saurav Bhandari]
-                [re:www.megalobiz.com/lrc/maker]
-                [ve:v1.2.3]
-                [01:34.44]So, so you think you can tell
+                [by:夜色虹桥]
+                [01:34.440]So, so you think you can tell
                 [01:40.94]Heaven from hell
                 [01:44.95]Blue skies from pain
                 [01:49.20]Can you tell a green field
@@ -60,7 +53,6 @@ export default {
         return{
             lrc:'',
             oLRC:{
-                ti: "", //歌曲名
                 ar: "", //演唱者
                 al: "", //专辑名
                 by: "", //歌词制作人
@@ -72,9 +64,17 @@ export default {
         }
     },
     mounted() {
-        this.lrc = this.$refs.lrc.innerHTML
-        this.createLrcObj(this.lrc)
-        this.showLRC()
+        //按 id 搜索歌词
+        this.$axios.get('/lyric?id=' + this.$route.params.id)
+            .then((res) => {
+                this.lrc = res.data.lrc.lyric
+                this.createLrcObj(this.lrc)
+            })
+            .catch((err) => {
+            console.log(err)
+            })
+
+
     },
     methods: {
         //解析lrc文本
