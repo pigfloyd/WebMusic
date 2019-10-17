@@ -17,7 +17,6 @@
                     <router-link to="/music/search" class="my-list">
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
-                    <router-link to="/music/song-detail" class="my-list">xxxxx</router-link>
                     <router-link to="/music/my-collection" class="my-list">xxxxx</router-link>
                     <router-link to="/music/song" class="my-list">xxxxx</router-link>
                     <router-link to="/music/song" class="my-list">xxxxx</router-link>      
@@ -37,7 +36,9 @@
                 </audio>
                 <div class="song-field">
                 <div  class="default-img" v-show="!flag"></div>
-                <router-link :to="'song-detail/'+ audio.id">
+                <router-link
+                 :to="{name:'song-detail',
+                 params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
                     <img  :src='audio.albumPicUrl' alt="" v-show="flag">
                 </router-link>
                 <div class="song-content">
@@ -98,6 +99,7 @@ export default {
                 id:'',
                 url:'',
                 albumPicUrl:'',
+                albumName:'',
                 name:'----------------',
                 art:'--------',
                 duration:'',
@@ -115,10 +117,11 @@ export default {
     },
     methods:{
         //播放
-        playSong(url,name,art,albumPicUrl,id){
+        playSong(url,name,art,albumPicUrl,albumName,id){
             this.flag = true
             this.$refs.audio.src = url
             this.audio.albumPicUrl = albumPicUrl
+            this.audio.albumName = albumName
             this.audio.name = name
             this.audio.art = art
             this.audio.id = id

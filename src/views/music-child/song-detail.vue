@@ -3,39 +3,13 @@
         <div class="left">
             <div class="song-img">
                 <div class="cd-img"></div>
-                <img src="../../assets/images/song.jpg" alt="">
+                <img alt="" :src="picUrl">
             </div>
-            <p>Wish You Were Here</p>
-            <span>艺术家：Pink Floyd</span>
-            <span>专辑：Wish You Were Here</span>
+            <p>{{songName}}</p>
+            <span>艺术家：{{art}}</span>
+            <span>专辑：{{albumName}}</span>
         </div>
         <div class="right">
-            <textarea ref="lrc" id="lrc_content" cols="30" style="display: none">
-                [by:夜色虹桥]
-                [01:34.440]So, so you think you can tell
-                [01:40.94]Heaven from hell
-                [01:44.95]Blue skies from pain
-                [01:49.20]Can you tell a green field
-                [01:53.45]From a cold steel rail?
-                [01:57.60]A smile from a veil?
-                [02:02.11]Do you think you can tell?
-                [02:06.10]Did they get you to trade
-                [02:10.11]Your heroes for ghosts?
-                [02:14.10]Hot ashes for trees?
-                [02:18.11]Hot air for a cool breeze?
-                [02:22.36]Cold comfort for change?
-                [02:26.11]Did you exchange
-                [02:30.36]A walk on part in the war
-                [02:33.36]For a lead role in a cage?
-                [03:15.80]How I wish, how I wish you were here
-                [03:22.05]We're just two lost souls
-                [03:26.80]Swimming in a fish bowl
-                [03:27.80]Year after year
-                [03:31.30]Running over the same old ground
-                [03:35.30]And how we found
-                [03:38.05]The same old fears
-                [03:41.30]Wish you were here
-            </textarea>
             <el-scrollbar style="height:100%" ref="myScrollbar">
                 <ul> 
                     <li v-for="(item,index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
@@ -61,6 +35,11 @@ export default {
             },
             myP:'myP',
             current:null,
+            picUrl:'',
+            songName:'',
+            art:'',
+            albumName:''
+            
         }
     },
     mounted() {
@@ -73,7 +52,10 @@ export default {
             .catch((err) => {
             console.log(err)
             })
-
+        this.picUrl = this.$route.params.picUrl
+        this.songName = this.$route.params.songName
+        this.art = this.$route.params.art
+        this.albumName = this.$route.params.albumName
 
     },
     methods: {

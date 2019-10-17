@@ -38,7 +38,7 @@
                          @mouseleave="mouseLeave">
                             <td>
                                 <img src="../../assets/images/cd.png" alt="" v-show="!(index==current)">
-                                <i class="fa fa-play fa-lg play-btn" v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.id)"></i>
+                                <i class="fa fa-play fa-lg play-btn" v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.name,item.album.id)"></i>
                             </td>
                             <td v-text="item.name" ></td>
                             <td v-text="item.artists[0].name"></td>
@@ -93,7 +93,7 @@ export default {
             this.current = -1
         },
         //播放歌曲
-        play(id,name,art,albumId){
+        play(id,name,art,albumName,albumId){
             var albumPicUrl
             this.$axios.get('/album?id=' + albumId)
             //搜索对应的专辑图片
@@ -105,7 +105,7 @@ export default {
             })
             this.$axios.get('/song/url?id=' + id)
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl,id)
+                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl,albumName,id)
             })
             .catch((err) => {
             console.log(err)
