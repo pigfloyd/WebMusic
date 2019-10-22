@@ -161,7 +161,8 @@ export default {
         left: 84px;  
         height: 260px;
         width:260px;
-        box-shadow: 0px 8px 34px 0px  rgba(0, 0, 0, 0.2);
+        border-radius: 8px; 
+        box-shadow: 0px 8px 30px 5px  rgba(0, 0, 0, 0.35);
     }
     .right{
         height:100%;

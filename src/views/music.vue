@@ -18,7 +18,7 @@
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
                     <router-link to="/music/my-collection" class="my-list">xxxxx</router-link>
-                    <router-link to="/music/song" class="my-list">xxxxx</router-link>
+                    <router-link to="/music/login" class="my-list">xxxxx</router-link>
                     <router-link to="/music/song" class="my-list">xxxxx</router-link>      
                 </div>
             </div>
@@ -35,15 +35,17 @@
                     <source :src='audio.url' type=audio/mp3> 
                 </audio>
                 <div class="song-field">
-                <div  class="default-img" v-show="!flag"></div>
+                <div  class="default-img" v-if="!flag"></div>
                 <router-link
                  :to="{name:'song-detail',
                  params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
-                    <img  :src='audio.albumPicUrl' alt="" v-show="flag">
+                    <img  :src='audio.albumPicUrl' alt="" v-if="flag">
                 </router-link>
                 <div class="song-content">
-                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;" v-text="audio.name"></p>
-                    <p style="opacity: 0.5;" v-text="audio.art"></p>
+                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;" v-text="audio.name" v-if="flag"></p>
+                    <p style="opacity: 0.5;" v-text="audio.art" v-if="flag"></p>
+                    <div class="default-p" v-if="!flag"></div>
+                    <div class="default-p" style="height:11px;width:140px;margin-left:77px;" v-if="!flag"></div>
                     <el-slider
                     style="margin-left:10px;"
                     v-model="sliderTime"
@@ -345,7 +347,8 @@ export default {
         border: none;
         box-shadow: 0px 2px 5px -1px grey;
         margin: 10px;
-        margin-top: 12px; 
+        margin-top: 12px;
+        border-radius: 8px; 
     }
     .song-field .default-img{
         float: left;
@@ -390,18 +393,16 @@ export default {
         margin-top: 10px;
         border: none;
         font-weight: bold;
-        background-image: linear-gradient(rgba(102,130,166), rgb(82,100,136));
+        background-color: #fff;
         border-radius: 4px;
-        color: #FFF;
+        color: black;
+        box-shadow: 0 1px 2px 1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
 
-    .list-group-item:hover{
-        color: white;
-        background-color: #7BCFA6;
+    .my-list:hover{
+        background-color: lightseagreen;
     }
-    .list-group-item:active{
-        background-color: gray;
-    }
+    
     .input-group-prepend span{
         background-color: #fff;
         border-radius: 4px;
@@ -410,6 +411,14 @@ export default {
     .form-control{
         border: none;
         box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
+    }
+    .default-p{
+        height:16px;
+        width:220px;
+        background-color: lightgrey;
+        border-radius: 2px;
+        margin-left:40px; 
+        margin-top: 10px;
     }
     
    
