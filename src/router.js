@@ -5,7 +5,7 @@ import music from './views/music.vue'
 import songDetail from './views/music-child/song-detail.vue'
 import myCollection from './views/music-child/my-collection.vue'
 import search from './views/music-child/search.vue'
-import login from './views/music-child/login.vue'
+import myPlayList from './views/music-child/my-playlist.vue'
 
 Vue.use(Router)
 
@@ -38,8 +38,8 @@ var router = new Router({
                     component:search
                 },
                 {
-                    path:'login',
-                    component:login
+                    path:'my-playlist',
+                    component:myPlayList
                 }
             ]
         },

@@ -38,7 +38,7 @@
                          @mouseleave="mouseLeave">
                             <td>
                                 <img src="../../assets/images/cd.png" alt="" v-show="!(index==current)">
-                                <i class="fa fa-play fa-lg play-btn" v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.name,item.album.id)"></i>
+                                <i class="fa fa-play fa-lg play-btn"  v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.name,item.album.id)"></i>
                             </td>
                             <td v-text="item.name" ></td>
                             <td v-text="item.artists[0].name"></td>
@@ -131,7 +131,6 @@ export default {
     }
     thead{
         font-style:italic;
-
     }
     tbody{
         font-size:14px;

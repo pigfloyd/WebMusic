@@ -15,6 +15,7 @@
                     <li v-for="(item,index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
                 </ul>
             </el-scrollbar>
+            
         </div>
     </div>
 </template>
@@ -25,7 +26,7 @@ export default {
     name:'song',
     data(){
         return{
-            lrc:'',
+            lrc:'0',
             oLRC:{
                 ar: "", //演唱者
                 al: "", //专辑名
@@ -48,9 +49,10 @@ export default {
             .then((res) => {
                 this.lrc = res.data.lrc.lyric
                 this.createLrcObj(this.lrc)
+
             })
             .catch((err) => {
-            console.log(err)
+                console.log(err)    
             })
         this.picUrl = this.$route.params.picUrl
         this.songName = this.$route.params.songName

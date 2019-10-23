@@ -18,7 +18,7 @@
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
                     <router-link to="/music/my-collection" class="my-list">xxxxx</router-link>
-                    <router-link to="/music/login" class="my-list">xxxxx</router-link>
+                    <router-link to="/music/my-playlist" class="my-list">我的歌单</router-link>
                     <router-link to="/music/song" class="my-list">xxxxx</router-link>      
                 </div>
             </div>
@@ -90,7 +90,6 @@
 <script>
 import RangeSlider from 'vue-range-slider'
 import 'vue-range-slider/dist/vue-range-slider.css'
-
 export default {
     name:'music',
     data(){
@@ -185,10 +184,7 @@ export default {
                 this.btnPlay = !this.btnPlay
             }
             this.sliderTime =  parseInt(this.audio.currentTime) 
-            for( var i in this.$refs.child.oLRC.ms){
-                if( this.audio.currentTime == Math.round(this.$refs.child.oLRC.ms[i].t))
-                    this.$refs.child.focusLRC(i)
-            }
+           
         },
     },
     watch: {
@@ -216,7 +212,6 @@ export default {
         background-size: 100% ;
         min-width: 1500px;
         min-height:700px;
-
     }
     .bd{
         position: absolute;
@@ -271,7 +266,6 @@ export default {
         text-align: center;
         vertical-align: middle;
         box-shadow: 0px 0px 10px 0px gray;
-
     }
     .play-btn{
         width:65px;
@@ -398,7 +392,6 @@ export default {
         color: black;
         box-shadow: 0 1px 2px 1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
-
     .my-list:hover{
         background-color: lightseagreen;
     }
