@@ -14,17 +14,26 @@
                     </div>
                 </div>
                 <div class="list-group">
-                    <router-link to="/music/search" class="my-list">
+                    <img src="../assets/images/cd.png" alt="" class="user" @click="showLogin">
+                    <router-link to="/music/search" class="my-list" @click.native="closeLogin">
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
-                    <router-link to="/music/my-collection" class="my-list">xxxxx</router-link>
-                    <router-link to="/music/my-playlist" class="my-list">我的歌单</router-link>
-                    <router-link to="/music/song" class="my-list">xxxxx</router-link>      
+                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">xxxxx</router-link>
+                    <router-link to="/music/my-playlist" class="my-list" @click.native="closeLogin">我的歌单</router-link>
+                    <router-link to="/music/song" class="my-list" @click.native="closeLogin">xxxxx</router-link>      
                 </div>
             </div>
             <div class="right-content">
                 <div class="right-content-bg">
-                    <router-view ref="child" @func="playSong"></router-view>
+                    <transition name="fade">
+                        <com-login v-if="loginFlag" class="my-login" @close="closeLogin"></com-login>
+                    </transition>
+                    <router-view ref="child"
+                      @func="playSong"
+                      @loadImg="loadImg"
+                      @myBlur="myBlur"
+                      :class="{'my-blur' : loginFlag}">
+                    </router-view>
                 </div>
             </div>
             <div class="bottom-bar">
@@ -35,15 +44,22 @@
                     <source :src='audio.url' type=audio/mp3> 
                 </audio>
                 <div class="song-field">
-                <div  class="default-img" v-if="!flag"></div>
+                <div  class="default-img" v-show="!flag"></div>
                 <router-link
-                 :to="{name:'song-detail',
-                 params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
-                    <img  :src='audio.albumPicUrl' alt="" v-if="flag">
+                :to="{name:'song-detail',
+                params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
+                    <transition name="fade">
+                        <img  :src='audio.albumPicUrl' alt="" v-show="flag" :class="{'my-blur' : blurFlag }">
+                    </transition>
                 </router-link>
                 <div class="song-content">
-                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;" v-text="audio.name" v-if="flag"></p>
-                    <p style="opacity: 0.5;" v-text="audio.art" v-if="flag"></p>
+                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;"
+                     v-if="flag"
+                     :class="{'my-blur' : blurFlag == true}"
+                     >
+                        {{ audio.name | ellipsis}}
+                     </p>
+                    <p style="opacity: 0.5;" v-text="audio.art" v-if="flag" :class="{'my-blur' : blurFlag == true}"></p>
                     <div class="default-p" v-if="!flag"></div>
                     <div class="default-p" style="height:11px;width:140px;margin-left:77px;" v-if="!flag"></div>
                     <el-slider
@@ -90,6 +106,8 @@
 <script>
 import RangeSlider from 'vue-range-slider'
 import 'vue-range-slider/dist/vue-range-slider.css'
+import login from '../components/com-login.vue'
+
 export default {
     name:'music',
     data(){
@@ -101,27 +119,38 @@ export default {
                 url:'',
                 albumPicUrl:'',
                 albumName:'',
-                name:'----------------',
-                art:'--------',
+                name:'',
+                art:'',
                 duration:'',
                 currentTime:'0',
                 isPlaying:false,
                 volValue: 100, 
             },
             flag:false,
+            blurFlag:false,
+            loginFlag:false,
             sliderTime:'',
-            keyWord:''
+            keyWord:'',
+        }
+    },
+    filters: {
+        ellipsis (value) {
+        if (!value) return ''
+        if (value.length > 33) {
+            return value.slice(0,33) + '...'
+        }
+        return value
         }
     },
     components: {
-        RangeSlider
+        RangeSlider,
+        'com-login': login
     },
     methods:{
         //播放
-        playSong(url,name,art,albumPicUrl,albumName,id){
+        playSong(url,name,art,albumName,id){
             this.flag = true
             this.$refs.audio.src = url
-            this.audio.albumPicUrl = albumPicUrl
             this.audio.albumName = albumName
             this.audio.name = name
             this.audio.art = art
@@ -129,6 +158,16 @@ export default {
             this.$refs.audio.play()
             this.audio.isPlaying = true
             this.btnPlay = false
+        },
+        //加载专辑封面
+        loadImg(albumPicUrl){
+            this.audio.albumPicUrl = albumPicUrl
+            //加载后解除模糊
+            this.blurFlag = false
+        },
+        //模糊封面
+        myBlur(){
+            this.blurFlag = true
         },
         //自动补零
         refixInteger(num, m) {
@@ -186,6 +225,14 @@ export default {
             this.sliderTime =  parseInt(this.audio.currentTime) 
            
         },
+        //打开登录框
+        showLogin(){
+            this.loginFlag = !this.loginFlag
+        },
+        //关闭登录框
+        closeLogin(){
+            this.loginFlag = false
+        }
     },
     watch: {
         //监听音量
@@ -342,7 +389,10 @@ export default {
         box-shadow: 0px 2px 5px -1px grey;
         margin: 10px;
         margin-top: 12px;
-        border-radius: 8px; 
+        border-radius: 8px;
+    }
+    .my-blur{
+        filter: blur(2px);
     }
     .song-field .default-img{
         float: left;
@@ -358,6 +408,7 @@ export default {
         width: 290px;
         height: 80px;
         margin-top: 10px;
+        text-overflow: ellipsis;
     }
     .song-field .song-content p{
         height:12px;
@@ -367,6 +418,7 @@ export default {
         padding: 0px;
         margin-top:10px;
         font-family: 'Franklin Gothic medium', 'Arial Narrow', Arial, sans-serif;
+        
     }
     ::-webkit-input-placeholder { /* WebKit browsers */
         color: lightgray;
@@ -376,6 +428,20 @@ export default {
     .list-group{
         padding: 0px;
         background-color: white;
+    }
+    .user{
+        height:60px;
+        width:60px;
+        border-radius: 50%; 
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .19);
+        cursor: pointer;
+    }
+    .my-login{
+        position: absolute;
+        left:50%;
+        top:50%;
+        transform: translate(-50%,-50%);
+        z-index: 999;
     }
     .my-list{
         height:50px;
@@ -390,7 +456,7 @@ export default {
         background-color: #fff;
         border-radius: 4px;
         color: black;
-        box-shadow: 0 1px 2px 1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
+        box-shadow: 0 1px 2px 1px  rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
     .my-list:hover{
         background-color: lightseagreen;
@@ -413,6 +479,14 @@ export default {
         margin-left:40px; 
         margin-top: 10px;
     }
-    
+    .fade-enter-active, .fade-leave-active {
+        transition: opacity .4s;
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0;
+    }
+    .my-blur{
+        filter: blur(2px);
+    }
    
 </style>

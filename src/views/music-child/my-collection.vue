@@ -1,41 +1,71 @@
 <template>
-    <div class="collection">
-        <album v-for="(item,index) in count"
-            :key="index"
-            :albumName="count[index].albumName"
-            :picUrl="count[index].picUrl">
-        </album>
+    <div class="collection-bd">
+        <button @click="show">按钮</button>
+        <div class="my-collection">
+            <com-album v-for="(item,index) in count"
+                :key="index"
+                :albumName="count[index].albumName"
+                :picUrl="count[index].picUrl">
+            </com-album>
+            <p>sdasd12dadsads,</p>
+            <p>sd123sdadsadsaadadsad,s</p>
+            <p>撒旦和期望</p>
+        </div>
+        <transition name="fade">
+            <com-login class="my-login" v-if="loginFlag"></com-login>
+        </transition>
     </div>
 </template>
 
 <script>
-import album from '../../components/album.vue'
+import album from '../../components/com-album.vue'
+import login from '../../components/com-login.vue'
 export default {
     name:'collection',
     data(){
         return{
-            count:[
-                {id:1,albumName:'Meddle',picUrl:require("../../assets/images/album/meddle.jpg")},
-                {id:2,albumName:'The Dark Side of the Moon',picUrl:require("../../assets/images/album/dark.jpg")},
-                {id:3,albumName:'Wish You Were Here',picUrl:require("../../assets/images/album/wish.jpg")},
-                {id:4,albumName:'The Wall',picUrl:require("../../assets/images/album/wall.jpg")},
-                {id:5,albumName:'Pulse',picUrl:require("../../assets/images/album/pulse.jpg")},
-                {id:6,albumName:'Nevermind',picUrl:require("../../assets/images/album/mind.jpg")},
-            ]
+           loginFlag: false
+        }
+    },
+    methods: {
+        show(){
+            this.loginFlag = true
         }
     },
     components:{
-        album
+        'com-album': album,
+        'com-login': login
     }
     
 }
 </script>
 
 <style scoped>
-    .collection{
+    .collection-bd{
+        height: 100%;
+        width: 100%;
+        padding: 10px;
+    }
+    .my-collection{
+        height: 100%;
+        width: 100%;
         display: flex;
         padding: 11px;
         padding-top: 20px; 
         flex-flow: row wrap;
+        filter: blur(2px);
     }
+    .my-login{
+        position: absolute;
+        left:50%;
+        top:50%;
+        transform: translate(-50%,-50%);
+    }
+    .fade-enter-active, .fade-leave-active {
+        transition: opacity .5s;
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0.5;
+    }
+
 </style>

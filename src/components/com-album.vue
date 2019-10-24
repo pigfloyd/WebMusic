@@ -15,7 +15,6 @@ export default {
         width:170px;
         height:150px;
         text-align: center;
-     
         margin: 2px;
 
     }

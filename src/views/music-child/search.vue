@@ -94,18 +94,20 @@ export default {
         },
         //播放歌曲
         play(id,name,art,albumName,albumId){
+            this.$emit('myBlur')
             var albumPicUrl
             this.$axios.get('/album?id=' + albumId)
             //搜索对应的专辑图片
             .then((res) => {
                 albumPicUrl = res.data.album.picUrl
+                this.$emit('loadImg',albumPicUrl)
             })
             .catch((err) => {
             console.log(err)
             })
             this.$axios.get('/song/url?id=' + id)
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl,albumName,id)
+                this.$emit('func',res.data.data[0].url,name,art,albumName,id)
             })
             .catch((err) => {
             console.log(err)

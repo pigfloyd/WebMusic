@@ -23,9 +23,11 @@
                     <tbody>
                         <tr v-for="(item,index) in songsList" :key="index">
                             <td>
-                                <i class="fa fa-play fa-lg play-btn" style="cursor:pointer;" @click="play(item.id,item.name,item.ar[0].name,item.al.name,item.al.id)"></i>
+                                <i class="fa fa-play fa-lg play-btn" style="cursor:pointer;"
+                                 @click="play(item.id,item.name,item.ar[0].name,item.al.name,item.al.id)">
+                                 </i>
                             </td>
-                            <td v-text="item.name" ></td>
+                            <td>{{ item.name | ellipsis}}</td>
                             <td v-text="item.ar[0].name"></td>
                             <td v-text="item.al.name"></td>
                         </tr>
@@ -43,6 +45,16 @@ export default {
             passWord:'',
             flag:'true',
             songList:[]
+        }
+    },
+    filters: {
+        //省略多余字符
+        ellipsis (value) {
+        if (!value) return ''
+        if (value.length > 56) {
+            return value.slice(0,56) + '...'
+        }
+        return value
         }
     },
     methods:{
@@ -72,18 +84,19 @@ export default {
         },
         //播放歌曲
         play(id,name,art,albumName,albumId){
+            this.$emit('myBlur')
             var albumPicUrl
             this.$axios.get('/album?id=' + albumId)
             //搜索对应的专辑图片
             .then((res) => {
                 albumPicUrl = res.data.album.picUrl
-            })
-            .catch((err) => {
-            console.log(err)
+                this.$emit('loadImg',albumPicUrl)
+            }).catch((err) => {
+                console.log(err)
             })
             this.$axios.get('/song/url?id=' + id)
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumPicUrl,albumName,id)
+                this.$emit('func',res.data.data[0].url,name,art,albumName,id)
             })
             .catch((err) => {
             console.log(err)

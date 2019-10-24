@@ -131,7 +131,6 @@ export default {
         font-size:25px;
         font-weight: bold;
         font-family: 'Franklin Gothic medium', 'Arial Narrow', Arial, sans-serif;
-
     }
    
     .left span{
@@ -190,7 +189,4 @@ export default {
         text-shadow: 0px 7px 5px lightgray;
         font-size:32px;
     }
-   
- 
-
 </style>
