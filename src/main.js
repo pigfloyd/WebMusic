@@ -10,13 +10,13 @@ import '../theme/index.css'
 import axios from 'axios'
 
 
+
 Vue.prototype.$axios = axios
 axios.defaults.baseURL = '/api'
 Vue.config.productionTip = false
 
 Vue.use(VueRouter)
 Vue.use(ElementUI)
-
 
 new Vue({
   render: h => h(App),

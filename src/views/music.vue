@@ -2,19 +2,11 @@
     <div class="bg">
         <div class="bd">
             <div class="left-content">
-                <div class="input-group mb-3" style="display:none">
-                    <input type="text" class="form-control" placeholder="搜索歌曲" v-model="keyWord">
-                    <div class="input-group-prepend">
-                        <router-link 
-                        to="/music/search"
-                        class="input-group-text"
-                        style="cursor: pointer;border-radius:0px 4px 4px 0px;border-left:0px;text-decoration:none;">
-                            <i class="fa fa-search " aria-hidden="true"></i>
-                        </router-link>
-                    </div>
-                </div>
                 <div class="list-group">
-                    <img src="../assets/images/cd.png" alt="" class="user" @click="showLogin">
+                    <div class="user-content">
+                        <img :src='user.pic_url' alt="" class="user" @click="showLogin">
+                        <span v-text="user.nickname"></span>
+                    </div>
                     <router-link to="/music/search" class="my-list" @click.native="closeLogin">
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
@@ -109,6 +101,16 @@ import 'vue-range-slider/dist/vue-range-slider.css'
 import login from '../components/com-login.vue'
 
 export default {
+    mounted(){
+        this.$axios.get('/login/status')
+        .then(res => {
+            this.user.pic_url = res.data.profile.avatarUrl
+            this.user.nickname = res.data.profile.nickname
+            console.log(res.data)
+        }).catch(err => {
+            console.log(err)
+        })
+    },
     name:'music',
     data(){
         return{
@@ -125,6 +127,10 @@ export default {
                 currentTime:'0',
                 isPlaying:false,
                 volValue: 100, 
+            },
+            user:{
+                pic_url:'',
+                nickname:''
             },
             flag:false,
             blurFlag:false,
@@ -282,6 +288,14 @@ export default {
         top:2%;
         padding: 10px;
         padding-top: 30px;
+    }
+    .left-content .user-content{
+        margin-bottom: 10px; 
+    }
+    .left-content .user-content span{
+        margin-left:20px;
+        font-size: 16px;
+        font-weight: bold; 
     }
     .right-content{
         position: absolute;
