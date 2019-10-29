@@ -10,8 +10,8 @@
                     <router-link to="/music/search" class="my-list" @click.native="closeLogin">
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
-                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">xxxxx</router-link>
                     <router-link to="/music/my-playlist" class="my-list" @click.native="closeLogin">我的歌单</router-link>
+                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">xxxxx</router-link>
                     <router-link to="/music/song" class="my-list" @click.native="closeLogin">xxxxx</router-link>      
                 </div>
             </div>
@@ -21,11 +21,21 @@
                         <com-login v-if="loginFlag" class="my-login" @close="closeLogin"></com-login>
                     </transition>
                     <router-view ref="child"
-                      @func="playSong"
-                      @loadImg="loadImg"
-                      @myBlur="myBlur"
-                      :class="{'my-blur' : loginFlag}">
+                        @func="playSong" 
+                        @loadImg="loadImg"
+                        @myBlur="myBlur"
+                        :class="{'my-blur' : loginFlag}"
+                        v-if="!$route.meta.keepAlive">
                     </router-view>
+                    <keep-alive>
+                        <router-view ref="child"
+                        @func="playSong" 
+                        @loadImg="loadImg"
+                        @myBlur="myBlur"
+                        :class="{'my-blur' : loginFlag}"
+                        v-if="$route.meta.keepAlive">
+                    </router-view>
+                    </keep-alive>
                 </div>
             </div>
             <div class="bottom-bar">
@@ -59,8 +69,7 @@
                     v-model="sliderTime"
                     :max='audio.duration'
                     @change="changeTime"
-                    :format-tooltip="formatTooltip"
-                    >
+                    :format-tooltip="formatTooltip">
                     </el-slider>
                 </div>
                 </div>
@@ -89,7 +98,6 @@
                     v-model="audio.volValue">
                     </range-slider>
                 </div>
-            
             </div>
         </div>
     </div>
@@ -106,7 +114,6 @@ export default {
         .then(res => {
             this.user.pic_url = res.data.profile.avatarUrl
             this.user.nickname = res.data.profile.nickname
-            console.log(res.data)
         }).catch(err => {
             console.log(err)
         })

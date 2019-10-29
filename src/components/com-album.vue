@@ -1,13 +1,20 @@
 <template id="album">
     <div class="bg">
-        <img :src="picUrl" alt="">
+        <router-link :to="{name:'playlist-detail',params:{playlistId:playlistId}}">
+            <img :src="picUrl" alt="">
+        </router-link>
         <p :title="albumName">{{ albumName }}</p>
     </div>
 </template>
 
 <script>
 export default {
-    props:['albumName','picUrl'],
+    props:['albumName','picUrl','playlistId'],
+    methods:{
+        openList(){
+            console.log(this.playlistId)
+        },
+    }
 }
 </script>
 <style scoped>
@@ -23,6 +30,7 @@ export default {
         width:120px;
         box-shadow: 0px 5px 15px 1px rgba(0, 0, 0, 0.4);
         border-radius: 6px; 
+        cursor: pointer;
     }
     .bg p{
         padding: 0;

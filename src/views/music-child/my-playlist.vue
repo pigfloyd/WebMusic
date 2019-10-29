@@ -1,15 +1,21 @@
 <template>
     <el-scrollbar style="height:100%">
-         <div class="load-container load3" v-if="load_flag">
+        <div class="load-container load3" v-if="false">
                     <div class="loader"></div>
         </div>
-        <div class="mypl-bd" v-if="!load_flag">
+        <div class="mypl-bd" v-show="list_flag">
             <com-pl v-for="(item,index) in playList"
                 :key="index"
                 :albumName="playList[index].name"
-                :picUrl="playList[index].coverImgUrl">
+                :picUrl="playList[index].coverImgUrl"
+                :playlistId="playList[index].id">
             </com-pl>
         </div>
+        <router-view @hide="hide"
+                     @func="func"
+                     @loadImg="loadImg"
+                     @myBlur="myBlur">
+        </router-view>
     </el-scrollbar>
 </template>
 <script>
@@ -25,8 +31,18 @@ export default {
             phoneNum:'15362145526',
             passWord:'',
             flag:'true',
-            load_flag:'true',
+            load_flag:'false',
+            list_flag:'true',
             playList:[]
+        }
+    },
+    watch:{
+        $route(now,old){
+            if(now.path == "/music/my-playlist/playlist-detail" && old.path =="/music/my-playlist"){
+                this.list_flag = false
+            } else{
+                this.list_flag = true
+            }
         }
     },
     components:{
@@ -52,24 +68,9 @@ export default {
                 //获取歌单信息
                 this.load_flag = !this.load_flag
                 this.playList = res.data.playlist
-                console.log(res)
             }).catch(err => {
                 console.log(err)
             })
-            // }).then((res) => {
-            //      var str = ''
-            //      for(let i = 0; i < res.data.privileges.length; i++){
-            //          str = str + res.data.privileges[i].id + ','
-            //      }
-            //      str = str.slice(0,str.length-1)
-            //      //获取指定歌单详细信息
-            //      return this.$axios.get('/song/detail?ids=' + str)
-            // }).then((res) => {
-            //     this.flag = false
-            //     this.songsList = res.data.songs
-            // }).catch((err) => {
-            //     console.log(err)
-            // })
         },
         //播放歌曲
         play(id,name,art,albumName,albumId){
@@ -90,6 +91,18 @@ export default {
             .catch((err) => {
             console.log(err)
             })
+        },
+        hide(){
+            this.list_flag = false
+        },
+        myBlur(){
+            this.$emit('myBlur')
+        },
+        loadImg(albumPicUrl){
+            this.$emit('loadImg',albumPicUrl)
+        },
+        func(url,name,art,albumName,id){
+            this.$emit('func',url,name,art,albumName,id)
         }
     }
 }
