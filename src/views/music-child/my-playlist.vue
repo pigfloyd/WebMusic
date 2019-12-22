@@ -13,8 +13,11 @@
         </div>
         <router-view @hide="hide"
                      @func="func"
+                     @setPl="setPl"
+                     @setIndex="setIndex"
                      @loadImg="loadImg"
-                     @myBlur="myBlur">
+                     @myBlur="myBlur"
+                     ref="child">
         </router-view>
     </el-scrollbar>
 </template>
@@ -33,7 +36,8 @@ export default {
             flag:'true',
             load_flag:'false',
             list_flag:'true',
-            playList:[]
+            playList:[],
+            playListDetail: [],
         }
     },
     watch:{
@@ -72,26 +76,7 @@ export default {
                 console.log(err)
             })
         },
-        //播放歌曲
-        play(id,name,art,albumName,albumId){
-            this.$emit('myBlur')
-            var albumPicUrl
-            this.$axios.get('/album?id=' + albumId)
-            //搜索对应的专辑图片
-            .then((res) => {
-                albumPicUrl = res.data.album.picUrl
-                this.$emit('loadImg',albumPicUrl)
-            }).catch((err) => {
-                console.log(err)
-            })
-            this.$axios.get('/song/url?id=' + id)
-            .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumName,id)
-            })
-            .catch((err) => {
-            console.log(err)
-            })
-        },
+       
         hide(){
             this.list_flag = false
         },
@@ -101,8 +86,14 @@ export default {
         loadImg(albumPicUrl){
             this.$emit('loadImg',albumPicUrl)
         },
-        func(url,name,art,albumName,id){
-            this.$emit('func',url,name,art,albumName,id)
+        func(url,name,art,albumName,id,index){
+            this.$emit('func',url,name,art,albumName,id,index)
+        },
+        setPl(playListDetail){
+            this.$emit('setPl',playListDetail)
+        },
+        setIndex(index){
+            this.$emit('setIndex',index)
         }
     }
 }

@@ -12,7 +12,7 @@
             <p>撒旦和期望</p>
         </div>
         <transition name="fade">
-            <com-login class="my-login" v-if="loginFlag"></com-login>
+            <com-login class="my-login"></com-login>
         </transition>
     </div>
 </template>
