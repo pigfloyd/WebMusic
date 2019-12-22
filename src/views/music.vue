@@ -24,6 +24,8 @@
                         @func="playSong" 
                         @loadImg="loadImg"
                         @myBlur="myBlur"
+                        @setPl="setPl"
+                        @setIndex="setIndex"
                         :class="{'my-blur' : loginFlag}"
                         v-if="!$route.meta.keepAlive">
                     </router-view>
@@ -74,14 +76,14 @@
                 </div>
                 </div>
                 <div class="btn-field">
-                    <button class="step-btn" style="margin-right:20px;">
+                    <button class="step-btn" style="margin-right:20px;" @click="prev">
                         <i class="fa fa-step-backward fa-1x"></i>
                     </button>  
                     <button class="play-btn" @click="play">
                         <i class="fa fa-play fa-lg" v-show="btnPlay"></i>
                         <i class="fa fa-pause fa-lg" v-show="!btnPlay"></i>
                     </button>
-                    <button class="step-btn" style="margin-left:20px;">
+                    <button class="step-btn" style="margin-left:20px;" @click="next">
                         <i class="fa fa-step-forward fa-1x"></i>
                     </button>
                 </div>
@@ -97,6 +99,10 @@
                     step="1"
                     v-model="audio.volValue">
                     </range-slider>
+                    <button class="random-btn" @click="switchPlayMode">
+                        <i class="fa fa-random fa-1x" v-show="!playModeFlag"></i>
+                        <i class="fa fa-arrows-h fa-1x" v-show="playModeFlag"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -107,7 +113,6 @@
 import RangeSlider from 'vue-range-slider'
 import 'vue-range-slider/dist/vue-range-slider.css'
 import login from '../components/com-login.vue'
-
 export default {
     mounted(){
         this.$axios.get('/login/status')
@@ -123,10 +128,12 @@ export default {
         return{
             btnPlay:true,
             btnVol:true,
+            playModeFlag: true,
             audio:{
                 id:'',
                 url:'',
                 albumPicUrl:'',
+                albumId: '',
                 albumName:'',
                 name:'',
                 art:'',
@@ -144,6 +151,10 @@ export default {
             loginFlag:false,
             sliderTime:'',
             keyWord:'',
+            toPlayList: [],
+            regularList: [],
+            randList: [],
+            current: 0 //目前歌的索引
         }
     },
     filters: {
@@ -161,13 +172,14 @@ export default {
     },
     methods:{
         //播放
-        playSong(url,name,art,albumName,id){
+        playSong(url,name,art,albumName,id,index){
             this.flag = true
             this.$refs.audio.src = url
             this.audio.albumName = albumName
             this.audio.name = name
             this.audio.art = art
             this.audio.id = id
+            this.current = index
             this.$refs.audio.play()
             this.audio.isPlaying = true
             this.btnPlay = false
@@ -204,11 +216,26 @@ export default {
                 this.audio.isPlaying = false
                 this.btnPlay = true
             }
-            if(this.$refs.audio.ended){
-                this.$refs.audio.play()
-                this.audio.isPlaying = true
-                this.btnPlay = false
+        },
+        //切到下一首歌
+        next(){
+            if(this.current == this.toPlayList.length -1){
+                this.current = 0
+                this.playNext(this.current)
+            } else {
+                this.current++
+                this.playNext(this.current)
             }
+        },
+        //切到上一首歌
+        prev(){
+            if(this.current == 0){
+                this.current = this.toPlayList.length
+            } else {
+                this.current--
+                this.playNext(this.current)
+            }
+            console.log(this.current)
         },
         //静音
         mute(){
@@ -234,9 +261,45 @@ export default {
             this.audio.currentTime = parseInt(this.$refs.audio.currentTime)
             if(this.$refs.audio.currentTime == this.$refs.audio.duration){
                 this.btnPlay = !this.btnPlay
+                if(this.toPlayList.length != 0){
+                    //播放待播列表的下一首
+                    this.current++
+                    if(this.current == this.toPlayList.length){
+                        this.current = 0
+                    }
+                    this.playNext(this.current)
+                }                
             }
             this.sliderTime =  parseInt(this.audio.currentTime) 
-           
+            //匹配时间
+            for( var i in this.$refs.child.oLRC.ms){
+                if( this.audio.currentTime == Math.round(this.$refs.child.oLRC.ms[i].t))
+                    this.$refs.child.focusLRC(i)
+            }
+        },
+        playNext(index){
+            this.myBlur() //模糊封面
+            this.audio.albumId = this.toPlayList[index].al.id
+            this.audio.id = this.toPlayList[index].id
+            this.$axios.get('/album?id=' + this.audio.albumId)
+            //搜索对应的专辑图片
+            .then((res) => {
+                this.audio.albumPicUrl = res.data.album.picUrl
+                this.loadImg(this.audio.albumPicUrl)
+            })
+            .catch((err) => {
+            console.log(err)
+            })
+            this.$axios.get('/song/url?id=' + this.audio.id)
+            .then((res) => {
+                this.playSong(res.data.data[0].url,this.toPlayList[index].name
+                ,this.toPlayList[index].ar[0].name,this.toPlayList[index].al.name
+                ,this.toPlayList[index].id,index)
+            })
+            .catch((err) => {
+            console.log(err)
+            })
+
         },
         //打开登录框
         showLogin(){
@@ -245,6 +308,49 @@ export default {
         //关闭登录框
         closeLogin(){
             this.loginFlag = false
+        },
+        //切换至随机播放模式或正常模式
+        switchPlayMode(){
+            function random(){
+                return Math.random() - 0.5
+            }
+            if(this.playModeFlag){
+                this.randList.sort(random)
+                this.toPlayList = this.randList
+            } else {
+                this.toPlayList = this.regularList
+                //获取当前歌曲索引
+                for(let count = 0; count < this.regularList.length; count++){
+                    if(this.audio.id == this.toPlayList[count].id){
+                        this.current = count
+                        break
+                    }
+                }
+                
+                
+            }
+            this.playModeFlag = !this.playModeFlag
+        },
+        //设置待播列表
+        setPl(playListDetail){
+            this.regularList = this.deepClone(playListDetail)
+            this.randList = this.deepClone(playListDetail)
+            this.toPlayList = this.regularList
+            function random(){
+                return Math.random() - 0.5
+            }
+            if(!this.playModeFlag){
+                this.random.sort(random)
+                this.toPlayList = this.randList
+            } 
+        },
+        //设置当前歌曲索引
+        setIndex(index){
+            this.current = index
+        },
+        //深拷贝
+        deepClone(obj){
+            return JSON.parse(JSON.stringify(obj))
         }
     },
     watch: {
@@ -380,11 +486,27 @@ export default {
         vertical-align: middle;
         line-height: 15px;
     }
+    .random-btn {
+        margin-left: 60px; 
+        width:40px;
+        height:40px;
+        display: inline-block;
+        cursor: pointer;
+        text-decoration: none;
+        outline: none;
+        color: black;
+        border: none;
+        border-radius: 50%;
+        background-image: linear-gradient(#fff, rgba(230, 230, 230));
+        box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
+        vertical-align: middle;
+        line-height: 15px;
+    }
     .play-btn:active,.step-btn:active{
         background-image: linear-gradient(rgb(238, 238, 238), #fff);
         box-shadow: 0 1px 1px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
-    .vol-btn:active{
+    .vol-btn:active,.random-btn:active{
         background-image: linear-gradient(rgb(238, 238, 238), #fff);
         box-shadow: 0 1px 1px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
