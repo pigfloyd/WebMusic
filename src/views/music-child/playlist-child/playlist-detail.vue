@@ -1,7 +1,8 @@
 <template>
     <div class="pldetail-bd">
         <div class="pl-header">
-            <router-link to="/music/my-playlist">wqeqwe</router-link>
+            <router-link to="/music/my-playlist">返回</router-link>
+            <span>歌单详情</span>
         </div>
         <div class="result" v-if="resultFlag">
                 <table class="table">
@@ -14,17 +15,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(item,index) in playList" :key="index"
+                        <tr v-for="(item,index) in playListDetail" :key="index"
                          @mouseover="mouseOver(index)"
                          @mouseleave="mouseLeave">
                             <td>
                                 <img src="../../../assets/images/cd.png" alt="" v-show="!(index==current)">
-                                <i class="fa fa-play fa-lg play-btn" style="cursor:pointer" v-show="index==current" @click="play(item.id,item.name,item.ar[0].name,item.al.name,item.al.id)"></i>
+                                <i class="fa fa-play fa-lg play-btn" style="cursor:pointer" v-show="index==current" @click="play(item.id,item.name,item.ar[0].name,item.al.name,item.al.id,index)"></i>
                             </td>
                             <td v-text="item.name" ></td>
                             <td v-text="item.ar[0].name"></td>
                             <td v-text="item.al.name"></td>
-
                         </tr>
                     </tbody>
                 </table>
@@ -35,12 +35,12 @@
 export default {
     data(){
         return {
-            playList:'',
+            playListDetail:[],
             resultFlag:'false',
             current:'-1'
         }
     },
-    created(){
+    mounted(){
         //刷新该页面时让父路由隐藏
         if(this.$route.path == "/music/my-playlist/playlist-detail"){
             this.$emit('hide')
@@ -57,7 +57,8 @@ export default {
         })
         .then(res => {
             this.resultFlag = true
-            this.playList = res.data.songs
+            this.playListDetail = res.data.songs
+            this.$emit('setPl',this.playListDetail)
         })
         .catch(err => {
             console.log(err)
@@ -71,8 +72,9 @@ export default {
             this.current = -1
         },
         //播放歌曲
-        play(id,name,art,albumName,albumId){
+        play(id,name,art,albumName,albumId,index){
             this.$emit('myBlur')
+            this.$emit('setIndex',index)
             var albumPicUrl
             this.$axios.get('/album?id=' + albumId)
             //搜索对应的专辑图片
@@ -85,12 +87,12 @@ export default {
             })
             this.$axios.get('/song/url?id=' + id)
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumName,id)
+                this.$emit('func',res.data.data[0].url,name,art,albumName,id,index)
             })
             .catch((err) => {
             console.log(err)
             })
-        }
+        },
     }
 }
 </script>
@@ -101,11 +103,15 @@ export default {
         padding: 20px;
     }
     .pl-header{
-        height: 80px;
+        height: 50px;
         width: 100%;
-        background-color: lightgreen;
+        background-color: #fff;
     }
-        thead{
+    .pl-header span {
+        font-size: 25px;
+        font-weight: bold;
+    }
+    thead{
         font-style:italic;
     }
     tbody{
