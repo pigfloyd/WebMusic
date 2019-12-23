@@ -11,7 +11,7 @@
                         <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                     </router-link>
                     <router-link to="/music/my-playlist" class="my-list" @click.native="closeLogin">我的歌单</router-link>
-                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">xxxxx</router-link>
+                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">收藏柜</router-link>
                     <router-link to="/music/song" class="my-list" @click.native="closeLogin">xxxxx</router-link>      
                 </div>
             </div>
@@ -27,6 +27,11 @@
                         @setPl="setPl"
                         @setIndex="setIndex"
                         :class="{'my-blur' : loginFlag}"
+                        :audioId="audio.id"
+                        :albumPicUrl="audio.albumPicUrl"
+                        :alName="audio.albumName"
+                        :sName="audio.name"
+                        :artist="audio.art"
                         v-if="!$route.meta.keepAlive">
                     </router-view>
                     <keep-alive>
@@ -271,7 +276,7 @@ export default {
                 }                
             }
             this.sliderTime =  parseInt(this.audio.currentTime) 
-            //匹配时间
+            //歌词同步
             for( var i in this.$refs.child.oLRC.ms){
                 if( this.audio.currentTime == Math.round(this.$refs.child.oLRC.ms[i].t))
                     this.$refs.child.focusLRC(i)
@@ -290,6 +295,7 @@ export default {
             .catch((err) => {
             console.log(err)
             })
+            //获取歌曲信息
             this.$axios.get('/song/url?id=' + this.audio.id)
             .then((res) => {
                 this.playSong(res.data.data[0].url,this.toPlayList[index].name
@@ -326,8 +332,6 @@ export default {
                         break
                     }
                 }
-                
-                
             }
             this.playModeFlag = !this.playModeFlag
         },
