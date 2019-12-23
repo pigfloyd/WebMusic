@@ -1,7 +1,9 @@
 <template>
     <div class="pldetail-bd">
         <div class="pl-header">
-            <router-link to="/music/my-playlist">返回</router-link>
+            <router-link to="/music/my-playlist">
+                <i class="fa fa-arrow-left fa-2x"></i>
+            </router-link>
             <span>歌单详情</span>
         </div>
         <div class="result" v-if="resultFlag">
@@ -108,7 +110,8 @@ export default {
         background-color: #fff;
     }
     .pl-header span {
-        font-size: 25px;
+        margin-left: 20px; 
+        font-size: 28px;
         font-weight: bold;
     }
     thead{
