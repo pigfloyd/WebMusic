@@ -26,7 +26,6 @@ export default {
     name:'song',
     data(){
         return{
-            lrc:'0',
             oLRC:{
                 ar: "", //演唱者
                 al: "", //专辑名
@@ -40,16 +39,13 @@ export default {
             songName:'',
             art:'',
             albumName:''
-            
         }
     },
     mounted() {
         //按 id 搜索歌词
         this.$axios.get('/lyric?id=' + this.$route.params.id)
             .then((res) => {
-                this.lrc = res.data.lrc.lyric
-                this.createLrcObj(this.lrc)
-
+                this.createLrcObj(res.data.lrc.lyric)
             })
             .catch((err) => {
                 console.log(err)    
@@ -58,10 +54,9 @@ export default {
         this.songName = this.$route.params.songName
         this.art = this.$route.params.art
         this.albumName = this.$route.params.albumName
-
     },
     methods: {
-        //解析lrc文本
+        //解析lrc
         createLrcObj(lrc){
             if(lrc.length==0) return;
             var lrcs = lrc.split('\n');//用回车拆分成数组
@@ -107,6 +102,36 @@ export default {
             }
         }
     },
+    props: ['audioId','albumPicUrl','alName','sName','artist'],
+    watch:{
+        'audioId': function(){
+            this.oLRC.ar = ''
+            this.oLRC.al = ''
+            this.oLRC.by = ''
+            this.oLRC.offset = 0
+            this.oLRC.ms = []
+            //按 id 搜索歌词
+            this.$axios.get('/lyric?id=' + this.audioId)
+            .then((res) => {
+                this.createLrcObj(res.data.lrc.lyric)
+            })
+            .catch((err) => {
+                console.log(err)    
+            })
+        },
+        'albumPicUrl': function(){
+            this.picUrl = this.albumPicUrl
+        },
+        'alName': function(){
+            this.albumName = this.alName
+        },
+        'sName': function(){
+            this.songName = this.sName
+        },
+        'artist': function(){
+            this.art = this.artist
+        }
+    }
 }
 </script>
 
@@ -163,7 +188,7 @@ export default {
         height: 260px;
         width:260px;
         border-radius: 8px; 
-        box-shadow: 0px 8px 30px 5px  rgba(0, 0, 0, 0.35);
+        box-shadow: 0px 12px 30px 5px  rgba(0, 0, 0, 0.55);
     }
     .right{
         height:100%;
