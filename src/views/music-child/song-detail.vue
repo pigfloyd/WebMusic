@@ -1,31 +1,59 @@
 <template>
-    <div class="bg2">
-        <div class="left">
-            <div class="song-img">
-                <div class="cd-img"></div>
-                <img alt="" :src="picUrl">
+    <div class="bg2" ref="bg2">
+        <div class="lyrics" id="lyrics">
+            <div class="left">
+                <div class="song-img">
+                    <div class="cd-img"></div>
+                    <img alt="" :src="picUrl">
+                </div>
+                <p>{{songName}}</p>
+                <span>艺术家：{{art}}</span>
+                <span>专辑：{{albumName}}</span>
+                <div class="comments-btn" @click="goToComments">评论区</div>
             </div>
-            <p>{{songName}}</p>
-            <span>艺术家：{{art}}</span>
-            <span>专辑：{{albumName}}</span>
+            <div class="right">
+                <el-scrollbar style="height:100%; " ref="myScrollbar">
+                    <ul> 
+                        <li v-for="(item,index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
+                    </ul>
+                </el-scrollbar>
+                
+            </div>
         </div>
-        <div class="right">
-            <el-scrollbar style="height:100%" ref="myScrollbar">
-                <ul> 
-                    <li v-for="(item,index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
-                </ul>
-            </el-scrollbar>
-            
+        <div class="comments">
+            <div class="send-comment clearfix">
+                 <div class="input-group mb-3" >
+                        <div class="avatar"></div>
+                        <input ref="search"
+                        type="text"
+                        style="display: inline-block"
+                        class="form-control"
+                        placeholder="发表评论"
+                        v-model="toSendComment">
+                </div>
+                <div class="btn-contain">
+                    <div class="send-btn" @click="sendComment">发表</div>
+                </div>
+            </div>
+            <com-comment 
+                v-for="(item, index) in comments"
+                :key="index"
+                :id="item.id"
+                :comment="item.comment"
+                >
+            </com-comment>
         </div>
     </div>
 </template>
 
 <script>
 import '../../assets/css/song.css'
+import comment from '../../components/com-comment.vue'
 export default {
-    name:'song',
+    name: 'song',
     data(){
         return{
+            liHeight: 0,
             oLRC:{
                 ar: "", //演唱者
                 al: "", //专辑名
@@ -38,7 +66,20 @@ export default {
             picUrl:'',
             songName:'',
             art:'',
-            albumName:''
+            albumName:'',
+            toSendComment: '',
+            comments: [
+                {
+                    id: '孙亚',
+                    time: '',
+                    comment: '国国叠着戴了两个帽子上台，帽子上写着“千岛湖旅游”，后来丢给了台下观众，签售的时候我问他帽子是哪里来的，他说来的路上从出租车司机那里买的国国真的太可爱了全程被他可爱昏倒！'
+                },
+                 {
+                    id: '潘慧',
+                    time: '',
+                    comment: '金桔希子是集结过去、现在与未来的可爱女性角色,爱与昙花一现的具体想像。三首歌都是对她而唱,金桔是时光飞梭到了不可考的时代,这里是人类第一个文明聚落,宫殿里的公主金桔正在轻轻地召那唤能征服时间的恋人。'
+                },
+            ],
         }
     },
     mounted() {
@@ -54,6 +95,8 @@ export default {
         this.songName = this.$route.params.songName
         this.art = this.$route.params.art
         this.albumName = this.$route.params.albumName
+        this.liHeight = this.$refs['li'].style.height
+        console.log(this.liHeight)
     },
     methods: {
         //解析lrc
@@ -91,15 +134,23 @@ export default {
                 return a.t-b.t;
             });
         },
-        //歌词同步
+        //歌词滚动同步
         focusLRC(index){
             this.current = index
-            if( index < 10){
-                this.$refs['myScrollbar'].wrap.scrollTop = index * 12
+            this.$refs['myScrollbar'].wrap.scrollTop = -240 + index * 48
+        },
+        //滚动到评论区
+        goToComments(){
+            this.$refs.bg2.scrollTop = document.getElementById("lyrics").offsetHeight
+        },
+        //发送评论
+        sendComment(){
+            let c = {
+                id: '爱纳米',
+                comment: this.toSendComment
             }
-            else{
-                this.$refs['myScrollbar'].wrap.scrollTop = index * 23
-            }
+            this.comments.unshift(c)
+            this.toSendComment = ''
         }
     },
     props: ['audioId','albumPicUrl','alName','sName','artist'],
@@ -131,29 +182,57 @@ export default {
         'artist': function(){
             this.art = this.artist
         }
+    },
+    components: {
+        'com-comment': comment
     }
 }
 </script>
 
 <style scoped>
-    .bg2{
+    .bg2 {
+        height:100%;
+        width:100%;
+        overflow:auto;
+        scroll-padding: 10px;
+    }
+    .lyrics{
         display: flex;
         height:100%;
         width:100%;
         text-align: center;
     }
+    .comments {
+        width:100%;
+        height: 300px;
+        margin-top: 30px;
+    }
     .left{
         height:100%;
         width:40%;  
-        padding-top:55px;
+        padding-top:50px;
         text-align: center;
-        
+    }
+    .left .comments-btn {
+        display: inline-block;
+        margin-top: 13px;
+        height: 40px;
+        width: 200px;
+        line-height: 40px;
+        font-size: 14px;
+        color: grey;
+        background-color: #f1f3f4;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        border: 1px solid #DCDCDC;
     }
     .left p{
         margin: 0;
         padding: 0;
-        margin-top: 35px;
-        font-size:25px;
+        margin-top: 105px;
+        font-size: 32px;
+        text-shadow: 0 15px 12px rgba(0, 0, 0, 0.2);
         font-weight: bold;
         font-family: 'Franklin Gothic medium', 'Arial Narrow', Arial, sans-serif;
     }
@@ -167,34 +246,37 @@ export default {
         opacity: 0.5;
     }
     .song-img{
+        position: relative;
         height: 250px;
         width:100%;        
     }
     .cd-img{
-        height: 248px;
-        width: 248px;
+        height: 330px;
+        width: 330px;
         background: url(../../assets/images/cd.png) no-repeat;
         background-size: 100%;
-        margin-left: 140px;
+        margin-left: 156px;
         transition: all 0.3s ease;
+        z-index: 1;
     }
     .cd-img:hover{
         transform: translateX(20px);
     }
     .song-img img{
         position: absolute; 
-        top:52px;
-        left: 84px;  
-        height: 260px;
-        width:260px;
-        border-radius: 8px; 
-        box-shadow: 0px 12px 30px 5px  rgba(0, 0, 0, 0.55);
+        top: -5px;
+        left: 100px;  
+        height: 340px;
+        width:340px;
+        border-radius: 15px; 
+        box-shadow: 0px 50px 45px -40px  rgba(0, 0, 0, 0.3);
+        z-index: 999;
+        border: 1px solid #dcdcdc;
     }
     .right{
         height:100%;
         width:60%;
         letter-spacing:0.5px;
-        
     }
     .right ul{
         padding:25px;
@@ -205,13 +287,68 @@ export default {
         padding: 0px;
         color: rgba(0, 0, 0, 0.877);
         font-size:26px;
-        line-height:1.5em;
+        line-height: 48px;
+        height: 48px;
         color:rgba(128, 128, 128, 0.75);
-        
     }
     .focus-lrc{
         color:black;
         text-shadow: 0px 7px 5px lightgray;
         font-size:32px;
+    }
+    .comments {
+        height: auto;
+        padding: 30px;
+    }
+    .comments .send-comment {
+        height: auto;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .comments .send-comment .avatar{
+        height:60px;
+        width:60px;
+        border-radius: 50%;
+        background-color: #DCDCDC;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .19);
+    }
+    .comments .send-comment .form-control{
+        height: 60px;
+        margin-left: 20px;
+        border: 1px solid #DCDCDC;
+        box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
+        font-weight: bold;
+        border-radius: 7px; 
+    }
+    .comments .send-comment .btn-contain {
+        width: 100%;
+        height: auto;
+    }
+    .comments .send-comment .btn-contain .send-btn {
+        float: right;
+        width: 90px;
+        height: 40px;
+        line-height: 40px;  
+        text-align: center;  
+        cursor: pointer;
+        text-decoration: none;
+        outline: none;
+        color: black;
+        border: none;
+        border-radius: 4px; 
+        font-weight: bold;
+        background-image: linear-gradient(#fff, rgb(230, 230, 230));
+        box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
+    }
+    .comments .send-comment .btn-contain .send-btn:active {
+        background-image: linear-gradient(rgb(238, 238, 238), #fff);
+        box-shadow: 0 1px 1px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
+    }
+    .clearfix:after {
+        content: "";
+        display: block;
+        height: 0;
+        clear: both;
+        visibility: hidden;
     }
 </style>

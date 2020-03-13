@@ -1,30 +1,47 @@
 <template>
-    <el-scrollbar style="height:100%">
-        <div class="load-container load3" v-if="false">
-                    <div class="loader"></div>
-        </div>
+    <el-scrollbar style="height:100%" class="pl-bg">
+        <vue-loading type="spin" color="#DCDCDC" :size="{ width: '50px', height: '50px' }" v-show="loadFlag" style="margin-top: 230px"></vue-loading>    
         <div class="mypl-bd" v-show="list_flag">
+            <div class="add">
+                <button type="button" class="btn" v-b-modal.modal-prevent-closing><i class="fa fa-plus fa-2x" aria-hidden="true" style="color: white"></i></button>
+            </div>
             <com-pl v-for="(item,index) in playList"
                 :key="index"
-                :albumName="playList[index].name"
+                :name="playList[index].name"
                 :picUrl="playList[index].coverImgUrl"
                 :playlistId="playList[index].id">
             </com-pl>
         </div>
-        <router-view @hide="hide"
-                     @func="func"
-                     @setPl="setPl"
-                     @setIndex="setIndex"
-                     @loadImg="loadImg"
-                     @myBlur="myBlur"
-                     ref="child">
-        </router-view>
+        <b-modal
+            id="modal-prevent-closing"
+            ref="modal"
+            title="创建歌单"
+            @show="resetModal"
+            @hidden="resetModal"
+            @ok="handleOk"
+            >
+            <form ref="form" @submit.stop.prevent="handleSubmit">
+                <b-form-group
+                :state="nameState"
+                label="歌单标题"
+                label-for="name-input"
+                invalid-feedback="必须输入歌单标题"
+                >
+                <b-form-input
+                    id="name-input"
+                    v-model="name"
+                    :state="nameState"
+                    required
+                ></b-form-input>
+                </b-form-group>
+            </form>
+        </b-modal>
     </el-scrollbar>
 </template>
 <script>
-import play_list from '../../components/com-album.vue'
+import play_list from '../../components/com-pl.vue'
 import '../../assets/css/search.css'
-import '../../assets/css/load3.css'
+import { VueLoading } from 'vue-loading-template'
 export default {
     created(){
         this.login()
@@ -33,11 +50,13 @@ export default {
         return {
             phoneNum:'15362145526',
             passWord:'',
-            flag:'true',
-            load_flag:'false',
-            list_flag:'true',
-            playList:[],
+            loadFlag: true,
+            list_flag: false,
+            playList: [],
             playListDetail: [],
+            name: '',
+            nameState: null,
+            submittedNames: []
         }
     },
     watch:{
@@ -51,6 +70,7 @@ export default {
     },
     components:{
         'com-pl':play_list,
+        VueLoading
     },
     filters: {
         //省略多余字符  
@@ -59,7 +79,7 @@ export default {
         if (value.length > 56) {
             return value.slice(0,56) + '...'
         }
-        return value
+            return value
         }
     },
     methods:{
@@ -70,30 +90,41 @@ export default {
                 return this.$axios.get('/user/playlist?uid=' + res.data.profile.userId)
             }).then((res) => {
                 //获取歌单信息
-                this.load_flag = !this.load_flag
+                this.list_flag = true
+                this.loadFlag = false
                 this.playList = res.data.playlist
             }).catch(err => {
                 console.log(err)
             })
         },
-       
-        hide(){
-            this.list_flag = false
+        checkFormValidity() {
+            const valid = this.$refs.form.checkValidity()
+            this.nameState = valid
+            return valid
         },
-        myBlur(){
-            this.$emit('myBlur')
+        resetModal() {
+            this.name = ''
+            this.nameState = null
         },
-        loadImg(albumPicUrl){
-            this.$emit('loadImg',albumPicUrl)
+        handleOk(bvModalEvt) {
+            // Prevent modal from closing
+            bvModalEvt.preventDefault()
+            // Trigger submit handler
+            this.handleSubmit()
         },
-        func(url,name,art,albumName,id,index){
-            this.$emit('func',url,name,art,albumName,id,index)
-        },
-        setPl(playListDetail){
-            this.$emit('setPl',playListDetail)
-        },
-        setIndex(index){
-            this.$emit('setIndex',index)
+        handleSubmit() {
+            // Exit when the form isn't valid
+            if (!this.checkFormValidity()) {
+                return
+            }
+            let result = {
+                name: this.name
+            }
+            this.playList.push(result)
+            // Hide the modal manually
+            this.$nextTick(() => {
+                this.$bvModal.hide('modal-prevent-closing')
+            })
         }
     }
 }
@@ -101,13 +132,12 @@ export default {
 <style scoped>
     .mypl-bd{
         width: 100%;
-        height:100%;
+        height: 100%;
         padding: 10px;
+        padding-left: 14px;
+        padding-bottom: 200px;
         display: flex;
         flex-flow:row wrap;
-    }
-    thead{
-        font-style:italic;
     }
     tbody{
         font-size:14px;
@@ -121,6 +151,22 @@ export default {
         height:25px;
         width:25px;
     }
-  
+    .add {
+        display: inline-block;
+        height: 150px;
+        width: 170px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .add .btn {
+        background-color: #1E90FF;
+        border-radius: 50%;
+        height: 60px;
+        width: 60px;
+        box-shadow: 0px 20px 45px -15px  #1E90FF;
+        line-height: 58px;
+        cursor: pointer;
+    }
     
 </style>

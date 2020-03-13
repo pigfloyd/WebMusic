@@ -1,40 +1,35 @@
 <template>
     <div class="collection-bd">
-        <button @click="show">按钮</button>
-        <div class="my-collection">
-            <com-album v-for="(item,index) in count"
+        <div class="header">我收藏的专辑</div>
+        <div class="album" v-show="currentSelect === 1">
+            <album v-for="(item,index) in albumList"
                 :key="index"
-                :albumName="count[index].albumName"
-                :picUrl="count[index].picUrl">
-            </com-album>
-            <p>sdasd12dadsads,</p>
-            <p>sd123sdadsadsaadadsad,s</p>
-            <p>撒旦和期望</p>
+                :name="item.name"
+                >
+            </album>
         </div>
-        <transition name="fade">
-            <com-login class="my-login"></com-login>
-        </transition>
     </div>
 </template>
 
 <script>
 import album from '../../components/com-album.vue'
-import login from '../../components/com-login.vue'
 export default {
     name:'collection',
     data(){
         return{
-           loginFlag: false
+           isLoginOpen: false
         }
     },
     methods: {
-        show(){
-            this.loginFlag = true
-        }
+        show() {
+            this.isLoginOpen = true
+        },
+        close() {
+            this.isLoginOpen = false
+        },
     },
     components:{
-        'com-album': album,
-        'com-login': login
+        'album': album,
     }
     
 }
@@ -46,26 +41,22 @@ export default {
         width: 100%;
         padding: 10px;
     }
-    .my-collection{
-        height: 100%;
+     .header {
+        height: auto;
+        line-height: auto;
         width: 100%;
+        font-size: 30px;
+        font-weight: bold;
+        color: black;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgb(235, 235, 235);
+    }
+    .album {
+        padding: 8px;
         display: flex;
-        padding: 11px;
-        padding-top: 20px; 
-        flex-flow: row wrap;
-        filter: blur(2px);
+        flex-flow:row wrap;
+        border-top: 2px solid rgb(235, 235, 235);
+        width: 100%;
+        height: auto;
     }
-    .my-login{
-        position: absolute;
-        left:50%;
-        top:50%;
-        transform: translate(-50%,-50%);
-    }
-    .fade-enter-active, .fade-leave-active {
-        transition: opacity .5s;
-    }
-    .fade-enter, .fade-leave-to {
-        opacity: 0.5;
-    }
-
 </style>
