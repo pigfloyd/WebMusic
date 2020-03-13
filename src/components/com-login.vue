@@ -11,7 +11,7 @@
                 <input type="text" class="form-control" placeholder="输入手机号" v-model="phoneNum">
             </div>
             <div class="input-group mb-3" >
-                <input type="password" class="form-control" placeholder="输入密码" v-model="passWord">
+                <input type="password" class="form-control" placeholder="输入密码" v-model="password">
             </div>
             <button type="button" class="commit-btn" @click="login">登录</button>
         </div>
@@ -19,9 +19,18 @@
 </template>
 <script>
 export default {
+    data() {
+        return {
+            phoneNum: '',
+            password: ''
+        }
+    },
     methods:{
         close(){
             this.$emit('close')
+        },
+        login() {
+            this.$axios.post(`/login/cellphone?phone=${this.phoneNum}&password=${this.password}`)
         }
     }
 }
