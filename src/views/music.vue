@@ -1,116 +1,158 @@
 <template>
-    <div class="bg">
-        <div class="bd">
-            <div class="left-content">
-                <div class="list-group">
-                    <div class="user-content">
-                        <img :src='user.pic_url' alt="" class="user" @click="showLogin">
-                        <span v-text="user.nickname"></span>
-                    </div>
-                    <router-link to="/music/search" class="my-list" @click.native="closeLogin">
-                        <i class="fa fa-search fa-lg" aria-hidden="true"></i>
-                    </router-link>
-                    <router-link to="/music/my-playlist" class="my-list" @click.native="closeLogin">我的歌单</router-link>
-                    <router-link to="/music/my-collection" class="my-list" @click.native="closeLogin">收藏柜</router-link>
-                    <router-link to="/music/song" class="my-list" @click.native="closeLogin">xxxxx</router-link>      
+    <div class="bd">
+        <div class="left-content">
+            <div class="list-group">
+                <div class="user-content">
+                    <img :src='user.pic_url' alt="" class="user" @click="showLogin">
+                    <span v-text="user.nickname"></span>
                 </div>
-            </div>
-            <div class="right-content">
-                <div class="right-content-bg">
-                    <transition name="fade">
-                        <com-login v-if="loginFlag" class="my-login" @close="closeLogin"></com-login>
-                    </transition>
-                    <router-view ref="child"
-                        @func="playSong" 
-                        @loadImg="loadImg"
-                        @myBlur="myBlur"
-                        @setPl="setPl"
-                        @setIndex="setIndex"
-                        :class="{'my-blur' : loginFlag}"
-                        :audioId="audio.id"
-                        :albumPicUrl="audio.albumPicUrl"
-                        :alName="audio.albumName"
-                        :sName="audio.name"
-                        :artist="audio.art"
-                        v-if="!$route.meta.keepAlive">
-                    </router-view>
-                    <keep-alive>
-                        <router-view ref="child"
-                        @func="playSong" 
-                        @loadImg="loadImg"
-                        @myBlur="myBlur"
-                        :class="{'my-blur' : loginFlag}"
-                        v-if="$route.meta.keepAlive">
-                    </router-view>
-                    </keep-alive>
-                </div>
-            </div>
-            <div class="bottom-bar">
-                <audio 
-                ref="audio"
-                @timeupdate="onTimeupdate"
-                @loadedmetadata="onLoadedmetadata">
-                    <source :src='audio.url' type=audio/mp3> 
-                </audio>
-                <div class="song-field">
-                <div  class="default-img" v-show="!flag"></div>
-                <router-link
-                :to="{name:'song-detail',
-                params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
-                    <transition name="fade">
-                        <img  :src='audio.albumPicUrl' alt="" v-show="flag" :class="{'my-blur' : blurFlag }">
-                    </transition>
+                <router-link to="/music/search" :class="[menuBtn === 1 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(1)">
+                    <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                 </router-link>
-                <div class="song-content">
-                    <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;"
-                     v-if="flag"
-                     :class="{'my-blur' : blurFlag == true}"
-                     >
-                        {{ audio.name | ellipsis}}
-                     </p>
-                    <p style="opacity: 0.5;" v-text="audio.art" v-if="flag" :class="{'my-blur' : blurFlag == true}"></p>
-                    <div class="default-p" v-if="!flag"></div>
-                    <div class="default-p" style="height:11px;width:140px;margin-left:77px;" v-if="!flag"></div>
-                    <el-slider
-                    style="margin-left:10px;"
-                    v-model="sliderTime"
-                    :max='audio.duration'
-                    @change="changeTime"
-                    :format-tooltip="formatTooltip">
-                    </el-slider>
-                </div>
-                </div>
-                <div class="btn-field">
-                    <button class="step-btn" style="margin-right:20px;" @click="prev">
-                        <i class="fa fa-step-backward fa-1x"></i>
-                    </button>  
-                    <button class="play-btn" @click="play">
-                        <i class="fa fa-play fa-lg" v-show="btnPlay"></i>
-                        <i class="fa fa-pause fa-lg" v-show="!btnPlay"></i>
-                    </button>
-                    <button class="step-btn" style="margin-left:20px;" @click="next">
-                        <i class="fa fa-step-forward fa-1x"></i>
-                    </button>
-                </div>
-                <div class="vol-field">
-                    <button class="vol-btn" @click="mute">
-                        <i class="fa fa-volume-up fa-1x" v-show="btnVol"></i>
-                        <i class="fa fa-volume-off fa-1x" v-show="!btnVol"></i> 
-                    </button>
-                    <range-slider 
-                    class="slider"
-                    min="0"
-                    max="100"
-                    step="1"
-                    v-model="audio.volValue">
-                    </range-slider>
-                    <button class="random-btn" @click="switchPlayMode">
-                        <i class="fa fa-random fa-1x" v-show="!playModeFlag"></i>
-                        <i class="fa fa-arrows-h fa-1x" v-show="playModeFlag"></i>
-                    </button>
-                </div>
+                <router-link to="/music/explore" :class="[menuBtn === 2 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(2)">发现音乐</router-link>      
+                <router-link to="/music/my-playlist" :class="[menuBtn === 3 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(3)">我的歌单</router-link>
+                <router-link to="/music/my-collection" :class="[menuBtn === 4 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(4)">收藏柜</router-link>
             </div>
         </div>
+        <div class="right-content">
+            <div class="right-content-bg">
+                <transition name="fade">
+                    <com-login v-if="loginFlag" class="my-login" @close="closeLogin"></com-login>
+                </transition>
+                <router-view ref="child"
+                    @addToList="addToList"
+                    @func="playSong" 
+                    @loadImg="loadImg"
+                    @myBlur="myBlur"
+                    @setPl="setPl"
+                    @setIndex="setIndex"
+                    :class="{'my-blur' : loginFlag}"
+                    :audioId="audio.id"
+                    :albumPicUrl="audio.albumPicUrl"
+                    :alName="audio.albumName"
+                    :sName="audio.name"
+                    :artist="audio.art"
+                    v-if="!$route.meta.keepAlive">
+                </router-view>
+                <keep-alive>
+                    <router-view ref="child"
+                    @func="playSong" 
+                    @loadImg="loadImg"
+                    @myBlur="myBlur"
+                    :class="{'my-blur' : loginFlag}"
+                    v-if="$route.meta.keepAlive">
+                </router-view>
+                </keep-alive>
+            </div>
+        </div>
+        <div class="bottom-bar">
+            <audio 
+            ref="audio"
+            @timeupdate="onTimeupdate"
+            @loadedmetadata="onLoadedmetadata">
+                <source :src='audio.url' type=audio/mp3> 
+            </audio>
+            <div class="song-field">
+            <div  class="default-img" v-show="!flag"></div>
+            <router-link
+            :to="{name:'song-detail',
+            params:{id:audio.id, picUrl:audio.albumPicUrl, songName:audio.name, art : audio.art,albumName:audio.albumName }}">
+                <transition name="fade">
+                    <img  :src='audio.albumPicUrl' alt="" v-show="flag" :class="{'my-blur' : blurFlag }">
+                </transition>
+            </router-link>
+            <div class="song-content">
+                <p style="height:17px;line-height:17px;font-size:17px;font-weight:bold;"
+                    v-show="flag"
+                    :class="{'my-blur' : blurFlag == true}"
+                    >
+                    {{ audio.name | ellipsis }}
+                    </p>
+                <p style="opacity: 0.5;" v-text="audio.art" v-show="flag" :class="{'my-blur' : blurFlag == true}"></p>
+                <el-slider
+                v-show="flag"
+                style="margin-left:10px;margin-bottom: 2px"
+                v-model="sliderTime"
+                :max='audio.duration'
+                @change="changeTime"
+                :format-tooltip="formatTooltip">
+                </el-slider>
+            </div>
+            </div>
+            <div class="btn-field">
+                <button class="step-btn" style="margin-right:20px;" @click="prev">
+                    <i class="fa fa-step-backward fa-1x"></i>
+                </button>  
+                <button class="play-btn" @click="play">
+                    <i class="fa fa-play fa-lg" v-show="btnPlay" style="margin-left: 3px"></i>
+                    <i class="fa fa-pause fa-lg" v-show="!btnPlay"></i>
+                </button>
+                <button class="step-btn" style="margin-left:20px;" @click="next">
+                    <i class="fa fa-step-forward fa-1x"></i>
+                </button>
+            </div>
+            <div class="vol-field">
+                <button class="vol-btn" @click="mute">
+                    <i class="fa fa-volume-up fa-1x" v-show="btnVol"></i>
+                    <i class="fa fa-volume-off fa-1x" v-show="!btnVol"></i> 
+                </button>
+                <range-slider 
+                class="slider"
+                min="0"
+                max="100"
+                step="1"
+                v-model="audio.volValue">
+                </range-slider>
+                <button class="random-btn" @click="switchPlayMode">
+                    <i class="fa fa-random fa-1x" v-show="!playModeFlag"></i>
+                    <i class="fa fa-arrows-h fa-1x" v-show="playModeFlag"></i>
+                </button>
+                 <button :class="[isListOpen ? 'random-btn active' : 'random-btn']" @click="openList">
+                    <i class="fa fa-list fa-1x" ></i>
+                </button>
+            </div>
+        </div>
+        <transition name="slide" mode="out-in">
+            <div class="to-play-list" v-show="isListOpen">
+                <div class="header">
+                    <div class="title">待播列表</div>
+                </div>
+                <div class="desc">
+                    <span style="font-size: 16px; color: #C0C0C0; font-weight: bold">共 {{ toPlayList.length }} 首歌</span>
+                    <div :class="[toPlayList.length === 0 ? 'clear-btn unable' : 'clear-btn']" @click="clearList">
+                        <i class="fa fa-trash-o" aria-hidden="true"></i> 
+                        清空
+                    </div>
+                </div>
+                <el-scrollbar style="height:100%">
+                    <table class="table table-striped" v-show="toPlayList.length !== 0">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col">歌名</th>
+                                <th scope="col">艺术家</th>
+                            </tr>
+                        </thead>
+                        <transition-group name="fade" tag="tbody">
+                            <tr v-for="(item, index) in toPlayList" :key="item">
+                                <td>
+                                    <i class="fa fa-play-circle" aria-hidden="true" v-show="current === index"></i> 
+                                </td>
+                                <td>{{ item.name | ellipsis2 }}</td>
+                                <td>{{ item.ar[0].name | ellipsis2 }}</td>
+                            </tr>
+                        </transition-group>
+                    </table>
+                </el-scrollbar>
+            </div>  
+        </transition>
+        <transition name="fade">
+            <div class="play-mode-tip" v-show="isTipOpen">
+                <span v-text="tips"></span>
+                <div class="out"></div>
+                <div class="in"></div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -120,6 +162,7 @@ import 'vue-range-slider/dist/vue-range-slider.css'
 import login from '../components/com-login.vue'
 export default {
     mounted(){
+        this.toPlayList = this.regularList
         this.$axios.get('/login/status')
         .then(res => {
             this.user.pic_url = res.data.profile.avatarUrl
@@ -131,6 +174,7 @@ export default {
     name:'music',
     data(){
         return{
+            menuBtn: 0,
             btnPlay:true,
             btnVol:true,
             playModeFlag: true,
@@ -159,16 +203,27 @@ export default {
             toPlayList: [],
             regularList: [],
             randList: [],
-            current: 0 //目前歌的索引
+            current: null, //目前歌的索引
+            isListOpen: false,
+            isTipOpen: false, //控制播放模式提示
+            tips: '',
+            tipsTimer: null, //提示框定时器
         }
     },
     filters: {
         ellipsis (value) {
-        if (!value) return ''
-        if (value.length > 33) {
-            return value.slice(0,33) + '...'
-        }
-        return value
+            if (!value) return ''
+            if (value.length > 33) {
+                return value.slice(0,33) + '...'
+            }
+            return value
+        },
+        ellipsis2 (value) {
+            if (!value) return ''
+            if (value.length > 20) {
+                return value.slice(0, 20) + '...'
+            }
+            return value
         }
     },
     components: {
@@ -224,23 +279,26 @@ export default {
         },
         //切到下一首歌
         next(){
-            if(this.current == this.toPlayList.length -1){
-                this.current = 0
-                this.playNext(this.current)
-            } else {
-                this.current++
-                this.playNext(this.current)
+            if(this.toPlayList.length !== 0){
+                if(this.current == this.toPlayList.length -1){
+                    this.current = 0
+                    this.playNext(this.current)
+                } else {
+                    this.current++
+                    this.playNext(this.current)
+                }
             }
         },
         //切到上一首歌
         prev(){
-            if(this.current == 0){
-                this.current = this.toPlayList.length
-            } else {
-                this.current--
-                this.playNext(this.current)
+            if(this.toPlayList.length !== 0){
+                if(this.current == 0){
+                    this.current = this.toPlayList.length
+                } else {
+                    this.current--
+                    this.playNext(this.current)
+                }
             }
-            console.log(this.current)
         },
         //静音
         mute(){
@@ -317,15 +375,22 @@ export default {
         },
         //切换至随机播放模式或正常模式
         switchPlayMode(){
-            function random(){
-                return Math.random() - 0.5
-            }
+            //随机模式
             if(this.playModeFlag){
-                this.randList.sort(random)
+                this.randList.sort(this.random)
+                if(this.randList.length > 1 && this.randList.length <= 10){
+                    while(JSON.stringify(this.randList) == JSON.stringify(this.regularList)){
+                        this.randList.sort(this.random)
+                    }
+                }
                 this.toPlayList = this.randList
-            } else {
+                this.tips = '随机播放'
+            }
+            //顺序模式 
+            else {
                 this.toPlayList = this.regularList
-                //获取当前歌曲索引
+                this.tips = '顺序播放'
+                //获取当前歌曲索引: 解决 bac abc 问题
                 for(let count = 0; count < this.regularList.length; count++){
                     if(this.audio.id == this.toPlayList[count].id){
                         this.current = count
@@ -334,19 +399,26 @@ export default {
                 }
             }
             this.playModeFlag = !this.playModeFlag
+            clearTimeout(this.timer)
+            this.isTipOpen = true
+            this.timer = setTimeout(() => {
+                this.isTipOpen = false
+            }, 1800)
         },
         //设置待播列表
         setPl(playListDetail){
             this.regularList = this.deepClone(playListDetail)
             this.randList = this.deepClone(playListDetail)
-            this.toPlayList = this.regularList
-            function random(){
-                return Math.random() - 0.5
+            if(this.playModeFlag){
+                this.toPlayList = this.regularList
+            } else {
+                this.randList.sort(this.random)
+                this.toPlayList = this.randList            
             }
-            if(!this.playModeFlag){
-                this.random.sort(random)
-                this.toPlayList = this.randList
-            } 
+        },
+        //生成随机数回调
+        random(){
+            return Math.random() - 0.5
         },
         //设置当前歌曲索引
         setIndex(index){
@@ -355,6 +427,36 @@ export default {
         //深拷贝
         deepClone(obj){
             return JSON.parse(JSON.stringify(obj))
+        },
+        //打开待播列表
+        openList(){
+            this.isListOpen = !this.isListOpen
+        },
+        //添加至待播列表
+        addToList(item){
+            if(this.toPlayList.length === 0){
+                if(this.playModeFlag){
+                    this.toPlayList = this.regularList
+                } else {
+                    this.toPlayList = this.randList
+                }
+            }
+            let result = {
+                name: item.name,
+                ar: [{name: item.artists[0].name}]
+            }
+            this.regularList.push(result)
+            this.randList.push(result)
+        },
+        //清空待播列表
+        clearList() {
+            this.toPlayList = []
+            this.regularList = []
+            this.randList = []
+        },
+        //点击菜单按钮时改变样式
+        switchCss(n){
+            this.menuBtn = n
         }
     },
     watch: {
@@ -384,30 +486,25 @@ export default {
         min-height:700px;
     }
     .bd{
-        position: absolute;
-        width:1350px;
-        height:640px;
-        top:50%;
-        left:50%;
-        transform: translate(-50%, -50%);
-        background-color: rgb(226, 220, 220);
-        box-shadow: 0px 4px 30px 1px rgba(0, 0, 0, 0.788);
-        border-radius: 10px;
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
     }
     .left-content{
         position: absolute;
-        background-color:white;
-        box-shadow: 0px 1px 10px 1px rgba(0, 0, 0, .19);
-        width:18%;
-        height:78%;
-        border-radius:10px; 
-        left:1%;
-        top:2%;
+        background-color: #F5F5F5;
+        box-shadow: 0px 2px 2px 0px  rgba(0, 0, 0, 0.2);
+        width: 260px;
+        height: 100vh;
+        left: 0;
         padding: 10px;
         padding-top: 30px;
+        border: 1px solid #DCDCDC;
     }
     .left-content .user-content{
-        margin-bottom: 10px; 
+        margin-bottom: 10px;
+        background-color: #F5F5F5;
     }
     .left-content .user-content span{
         margin-left:20px;
@@ -417,11 +514,10 @@ export default {
     .right-content{
         position: absolute;
         background-color: rgb(226, 220, 220);
-        width:79%;
-        height:78%;  
-        right:1%;
-        top:2%;
-        
+        width: calc( 100vw - 260px );
+        height: 90vh;
+        top: 10vh;
+        right: 0;
     }
     .right-content-bg{
         position: relative;
@@ -430,24 +526,23 @@ export default {
         background-color: white;
         box-shadow: 0px 0px 15px 0px inset grey;
         border-radius:10px;
+        box-shadow:inset 0px 0px 15px 1px #DCDCDC;
     }
     .bottom-bar{
         display: flex;
         position: absolute;
         background-color:white;
-        width:98%;
-        height:16%;
-        line-height: 100px;
-        bottom: 2%;
-        left:1%;
-        border-radius:10px; 
+        width: calc( 100vw - 260px);
+        height: 10vh;
+        top: 0;
+        right: 0vw;
         text-align: center;
         vertical-align: middle;
-        box-shadow: 0px 0px 10px 0px gray;
+        border: 1px solid #DCDCDC;
     }
     .play-btn{
-        width:65px;
-        height:65px;  
+        width:45px;
+        height:45px;  
         cursor: pointer;
         text-decoration: none;
         outline: none;
@@ -457,11 +552,10 @@ export default {
         background-image: linear-gradient(#fff, rgb(230, 230, 230));
         box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
         line-height: 2px;
-  
     }
     .step-btn{
-        width:45px;
-        height:45px;
+        width:30px;
+        height:30px;
         display: inline-block;
         cursor: pointer;
         text-decoration: none;
@@ -469,7 +563,7 @@ export default {
         color: black;
         border: none;
         border-radius: 50%;
-        background-image: linear-gradient(#fff, rgba(230, 230, 230));
+        background-image: linear-gradient(#fff, rgb(230, 230, 230));
         box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
         vertical-align: middle;
         line-height: 1px;
@@ -485,7 +579,7 @@ export default {
         color: black;
         border: none;
         border-radius: 50%;
-        background-image: linear-gradient(#fff, rgba(230, 230, 230));
+        background-image: linear-gradient(#fff, rgb(230, 230, 230));
         box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
         vertical-align: middle;
         line-height: 15px;
@@ -501,7 +595,7 @@ export default {
         color: black;
         border: none;
         border-radius: 50%;
-        background-image: linear-gradient(#fff, rgba(230, 230, 230));
+        background-image: linear-gradient(#fff, rgb(230, 230, 230));
         box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
         vertical-align: middle;
         line-height: 15px;
@@ -514,28 +608,36 @@ export default {
         background-image: linear-gradient(rgb(238, 238, 238), #fff);
         box-shadow: 0 1px 1px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
+
+    .active {
+        background-image: linear-gradient(rgb(238, 238, 238), #fff);
+        box-shadow: 0 1px 1px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
+    }
+   
     .vol-field{
-        flex:5;
-        height:100px;
+        line-height: 9vh;
+        width: calc((100vw - 260px) / 3 );
+        min-width: 400px;
     }
     .btn-field{
-        flex:5;
-        height:100px;
+        line-height: 9vh;
+        width: calc((100vw - 260px) / 3 );
+        min-width: 400px;
     }
     .song-field{
-        flex:5;
-        height:100px;
+        width: calc((100vw - 260px) / 3 );
         text-align: center;
+        min-width: 400px;
     }
     .song-field img{
         float: left;
-        width:80px;
-        height:80px;
+        width:60px;
+        height:60px;
         background-size: 100% ;
         border: none;
         box-shadow: 0px 2px 5px -1px grey;
         margin: 10px;
-        margin-top: 12px;
+        margin-top: 5px;
         border-radius: 8px;
     }
     .my-blur{
@@ -543,18 +645,18 @@ export default {
     }
     .song-field .default-img{
         float: left;
-        width:80px;
-        height:80px;
+        width:60px;
+        height:60px;
         background: url(../assets/images/cd.png) no-repeat;
         background-size: 100% ;
         margin: 10px;
-        margin-top: 12px; 
+        margin-top: 5px; 
     }
     .song-field .song-content{
         float: left;
         width: 290px;
         height: 80px;
-        margin-top: 10px;
+        margin-top: 2px;
         text-overflow: ellipsis;
     }
     .song-field .song-content p{
@@ -563,9 +665,8 @@ export default {
         font-size:12px;
         margin: 0px;
         padding: 0px;
-        margin-top:10px;
+        margin-top:6px;
         font-family: 'Franklin Gothic medium', 'Arial Narrow', Arial, sans-serif;
-        
     }
     ::-webkit-input-placeholder { /* WebKit browsers */
         color: lightgray;
@@ -574,7 +675,7 @@ export default {
     }
     .list-group{
         padding: 0px;
-        background-color: white;
+        background-color: #F5F5F5;
     }
     .user{
         height:60px;
@@ -598,17 +699,18 @@ export default {
         text-align: center;
         text-decoration: none;
         margin-top: 10px;
+        margin-left: 10px;
         border: none;
         font-weight: bold;
-        background-color: #fff;
-        border-radius: 4px;
+        background-color: white;
+        border-radius: 5px;
         color: black;
-        box-shadow: 0 1px 2px 1px  rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, .4);
+        box-shadow: 0 2px 8px -1px  rgba(0, 0, 0, 0.19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
-    .my-list:hover{
-        background-color: lightseagreen;
+    .clicked {
+        background-image: linear-gradient(rgb(238, 238, 238), #fff);
+        box-shadow: 0 1px 1px  1px rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
     }
-    
     .input-group-prepend span{
         background-color: #fff;
         border-radius: 4px;
@@ -617,14 +719,6 @@ export default {
     .form-control{
         border: none;
         box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
-    }
-    .default-p{
-        height:16px;
-        width:220px;
-        background-color: lightgrey;
-        border-radius: 2px;
-        margin-left:40px; 
-        margin-top: 10px;
     }
     .fade-enter-active, .fade-leave-active {
         transition: opacity .4s;
@@ -635,5 +729,104 @@ export default {
     .my-blur{
         filter: blur(2px);
     }
-   
+    .to-play-list {
+        width: 500px;
+        height: 90vh;
+        background: white;
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        box-shadow: -15px 30px 45px 0px  rgba(0, 0, 0, 0.1);
+        border-radius: 10px 0 0 10px;
+        z-index: 999;
+    }
+    .to-play-list .header {
+        height: 60px;
+        width: 100%;
+        border-radius: 10px 0 0 0;
+        background-image: linear-gradient(rgb(30, 144, 255), rgb(5, 119, 230));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    .to-play-list .header .title {
+        font-size: 22px;
+        font-weight: bold;
+        color: white;
+    }
+    .to-play-list .desc {
+        height: 40px;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 15px;
+        padding-right: 15px;
+        border: 1px solid #f5f5f5;
+    }
+    .clear-btn {
+        height: 28px;
+        line-height: 28px;
+        width: 60px;
+        font-size: 12px;
+        text-align: center;
+        font-weight: bold;
+        color: white;
+        background-color: #FA8072;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .slide-enter-active, .slide-leave-active {
+        transition: transform .4s ease;
+    }
+    .slide-enter, .slide-leave-to {
+        transform: translateX(500px);
+    }
+    .fade-enter-active, .fade-leave-active {
+        transition: all 0.7s;
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    .unable {
+        opacity: 0.5;
+        cursor: auto;
+    }
+    .play-mode-tip {
+        width:120px;
+        height:40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #808080;
+        font-weight: bold;
+        border:1px solid #DCDCDC;
+        background-color: #FFF;
+        position: absolute;
+        right: 6vw;
+        top: 11vh;
+        border-radius: 6px;
+        box-shadow: 0px 10px 30px -5px rgba(0, 0, 0, .19);
+        z-index: 999;
+    }
+    .play-mode-tip .out,.in {
+        position:absolute;
+        width: 0;
+        height: 0;
+    }
+    .play-mode-tip .out {
+        border:12px solid transparent;
+        border-bottom-color: #DCDCDC;
+        top:-25px;
+        left: 47px;
+    }
+     .play-mode-tip .in{
+        border:11px solid transparent;
+        border-bottom-color:#fff;
+        top:-22px;
+        left: 48px;
+    }
 </style>
