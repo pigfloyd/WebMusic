@@ -2,9 +2,10 @@
     <div class="bd">
         <div class="left-content">
             <div class="list-group">
-                <div class="user-content">
-                    <img :src='user.pic_url' alt="" class="user" @click="showLogin">
-                    <span v-text="user.nickname"></span>
+                <div class="user-content" @click="showLogin">
+                    <img :src='user.pic_url' alt="" class="user">
+                    <span v-text="user.nickname" v-show="isLogin"></span>
+                    <span v-show="!isLogin">登录 / 注册</span>
                 </div>
                 <router-link to="/music/search" :class="[menuBtn === 1 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(1)">
                     <i class="fa fa-search fa-lg" aria-hidden="true"></i>
@@ -16,8 +17,11 @@
         </div>
         <div class="right-content">
             <div class="right-content-bg">
-                <transition name="fade">
-                    <com-login v-if="loginFlag" class="my-login" @close="closeLogin"></com-login>
+                <transition name="login">
+                    <com-login v-show="loginFlag" class="my-login" @close="closeLogin" @login="logined"></com-login>
+                </transition>
+                <transition name="login">
+                    <com-user v-show="userFlag" class="my-login" @close="closeUser" @logout="logout" :username="user.nickname"></com-user>
                 </transition>
                 <router-view ref="child"
                     @addToList="addToList"
@@ -36,10 +40,19 @@
                 </router-view>
                 <keep-alive>
                     <router-view ref="child"
+                    @addToList="addToList"
                     @func="playSong" 
+                    @setPl="setPl"
                     @loadImg="loadImg"
+                    @setIndex="setIndex"
                     @myBlur="myBlur"
                     :class="{'my-blur' : loginFlag}"
+                    :audioId="audio.id"
+                    :albumPicUrl="audio.albumPicUrl"
+                    :alName="audio.albumName"
+                    :sName="audio.name"
+                    :artist="audio.art"
+                    :loadSongs="loadSongs"
                     v-if="$route.meta.keepAlive">
                 </router-view>
                 </keep-alive>
@@ -124,7 +137,7 @@
                         清空
                     </div>
                 </div>
-                <el-scrollbar style="height:100%">
+                <el-scrollbar style="height:100%" ref="listScroll">
                     <table class="table table-striped" v-show="toPlayList.length !== 0">
                         <thead>
                             <tr>
@@ -138,8 +151,8 @@
                                 <td>
                                     <i class="fa fa-play-circle" aria-hidden="true" v-show="current === index"></i> 
                                 </td>
-                                <td>{{ item.name | ellipsis2 }}</td>
-                                <td>{{ item.ar[0].name | ellipsis2 }}</td>
+                                <td>{{ item.song.songName | ellipsis2 }}</td>
+                                <td>{{ item.artist.singerName | ellipsis2 }}</td>
                             </tr>
                         </transition-group>
                     </table>
@@ -153,23 +166,25 @@
                 <div class="in"></div>
             </div>
         </transition>
+        <transition name="regi">
+            <div class="register-tip" v-show="isTip2Open" v-text="toast"></div>
+        </transition>
     </div>
 </template>
 
 <script>
 import RangeSlider from 'vue-range-slider'
 import 'vue-range-slider/dist/vue-range-slider.css'
-import login from '../components/com-login.vue'
 export default {
     mounted(){
         this.toPlayList = this.regularList
-        this.$axios.get('/login/status')
-        .then(res => {
-            this.user.pic_url = res.data.profile.avatarUrl
-            this.user.nickname = res.data.profile.nickname
-        }).catch(err => {
-            console.log(err)
-        })
+        if(localStorage.getItem('token')){
+            this.isLogin = true
+            this.user.nickname = JSON.parse(localStorage.getItem('username'))
+            this.user.pic_url = require('../assets/images/test.png')
+        } else {
+            this.user.pic_url = require('../assets/images/user.png')
+        }
     },
     name:'music',
     data(){
@@ -208,6 +223,11 @@ export default {
             isTipOpen: false, //控制播放模式提示
             tips: '',
             tipsTimer: null, //提示框定时器
+            isTip2Open: false, //注册成功
+            toast: '',
+            isLogin: false,
+            userFlag: false,
+            loadSongs: false, //是否加载待播列表
         }
     },
     filters: {
@@ -228,21 +248,30 @@ export default {
     },
     components: {
         RangeSlider,
-        'com-login': login
+        'com-login': () => import('../components/com-login.vue'),
+        'com-user': () => import('../components/com-user.vue')
     },
     methods:{
         //播放
-        playSong(url,name,art,albumName,id,index){
+        playSong(url, name, art, albumName, id, albumPic, index){
             this.flag = true
             this.$refs.audio.src = url
-            this.audio.albumName = albumName
+            if(albumName !== null){
+                this.audio.albumName = albumName
+            }
             this.audio.name = name
-            this.audio.art = art
+            if(art !== null){
+                this.audio.art = art
+            }
             this.audio.id = id
             this.current = index
             this.$refs.audio.play()
             this.audio.isPlaying = true
             this.btnPlay = false
+            if(albumPic !== null){
+                this.audio.albumPicUrl = albumPic
+            }
+            this.blurFlag = false
         },
         //加载专辑封面
         loadImg(albumPicUrl){
@@ -340,38 +369,47 @@ export default {
                     this.$refs.child.focusLRC(i)
             }
         },
+        //
         playNext(index){
             this.myBlur() //模糊封面
-            this.audio.albumId = this.toPlayList[index].al.id
-            this.audio.id = this.toPlayList[index].id
-            this.$axios.get('/album?id=' + this.audio.albumId)
-            //搜索对应的专辑图片
-            .then((res) => {
-                this.audio.albumPicUrl = res.data.album.picUrl
-                this.loadImg(this.audio.albumPicUrl)
-            })
-            .catch((err) => {
-            console.log(err)
-            })
+            this.audio.albumId = this.toPlayList[index].song.songId
+            this.audio.name = this.toPlayList[index].song.songName
             //获取歌曲信息
-            this.$axios.get('/song/url?id=' + this.audio.id)
-            .then((res) => {
-                this.playSong(res.data.data[0].url,this.toPlayList[index].name
-                ,this.toPlayList[index].ar[0].name,this.toPlayList[index].al.name
-                ,this.toPlayList[index].id,index)
+            this.$axios.get('/api/server/song_resource.php/songResource?songId=' + this.toPlayList[index].song.songId)
+            .then(res => {
+                console.log('下一首')
+                this.playSong(res.data.songUrl, 
+                this.toPlayList[index].song.songName, 
+                null,
+                null, 
+                this.toPlayList[index].song.songId,
+                null, 
+                index)
             })
-            .catch((err) => {
-            console.log(err)
-            })
-
         },
-        //打开登录框
+        //打开登录框或用户框
         showLogin(){
-            this.loginFlag = !this.loginFlag
+            if(this.isLogin){
+                this.userFlag = true
+            } else {
+                this.loginFlag = true
+            }
         },
         //关闭登录框
         closeLogin(){
             this.loginFlag = false
+        },
+        //关闭用户框
+        closeUser(){
+            this.userFlag = false
+        },
+        //登出
+        logout(){
+            this.userFlag = false
+            this.isLogin = false
+            this.user.pic_url = require('../assets/images/user.png')
+            localStorage.removeItem('token')
+            localStorage.removeItem('username')
         },
         //切换至随机播放模式或正常模式
         switchPlayMode(){
@@ -390,12 +428,12 @@ export default {
             else {
                 this.toPlayList = this.regularList
                 this.tips = '顺序播放'
-                //获取当前歌曲索引: 解决 bac abc 问题
-                for(let count = 0; count < this.regularList.length; count++){
-                    if(this.audio.id == this.toPlayList[count].id){
-                        this.current = count
-                        break
-                    }
+            }
+            //获取当前歌曲索引: 解决 bac abc 问题
+            for(let count = 0; count < this.toPlayList.length; count++){
+                if(this.audio.id == this.toPlayList[count].id){
+                    this.current = count
+                    break
                 }
             }
             this.playModeFlag = !this.playModeFlag
@@ -407,6 +445,7 @@ export default {
         },
         //设置待播列表
         setPl(playListDetail){
+            this.loadSongs = true
             this.regularList = this.deepClone(playListDetail)
             this.randList = this.deepClone(playListDetail)
             if(this.playModeFlag){
@@ -426,7 +465,36 @@ export default {
         },
         //深拷贝
         deepClone(obj){
-            return JSON.parse(JSON.stringify(obj))
+            var o;
+            // 如果  他是对象object的话  , 因为null,object,array  也是'object';
+            if (typeof obj === 'object') {
+                
+                // 如果  他是空的话
+                if (obj === null) {
+                o = null;
+                }
+                else {
+            
+                // 如果  他是数组arr的话
+                if (obj instanceof Array) {
+                    o = [];
+                    for (var i = 0, len = obj.length; i < len; i++) {
+                    o.push(this.deepClone(obj[ i ]));
+                    }
+                }
+                // 如果  他是对象object的话
+                else {
+                    o = {};
+                    for (var j in obj) {
+                    o[ j ] = this.deepClone(obj[ j ]);
+                    }
+                }
+                }
+            }
+            else {
+                o = obj;
+            }
+            return o;
         },
         //打开待播列表
         openList(){
@@ -450,13 +518,26 @@ export default {
         },
         //清空待播列表
         clearList() {
+            this.loadSongs = false
             this.toPlayList = []
-            this.regularList = []
-            this.randList = []
+            // this.regularList = []
+            // this.randList = []
         },
         //点击菜单按钮时改变样式
         switchCss(n){
             this.menuBtn = n
+        },
+        //登录成功
+        logined(username){
+            this.toast = '登录成功'
+            this.loginFlag = false
+            this.isLogin = true
+            this.isTip2Open = true
+            this.user.nickname = username
+            this.user.pic_url = require("@/assets/images/test.png")
+            setTimeout(() => {
+                this.isTip2Open = false
+            }, 3000);
         }
     },
     watch: {
@@ -480,7 +561,6 @@ export default {
         position: absolute;
         width: 100%;
         height: 100%;
-        background: url(../assets/images/wood.png) no-repeat;
         background-size: 100% ;
         min-width: 1500px;
         min-height:700px;
@@ -505,6 +585,7 @@ export default {
     .left-content .user-content{
         margin-bottom: 10px;
         background-color: #F5F5F5;
+        cursor: pointer;
     }
     .left-content .user-content span{
         margin-left:20px;
@@ -678,6 +759,7 @@ export default {
         background-color: #F5F5F5;
     }
     .user{
+        margin-left: 12px;
         height:60px;
         width:60px;
         border-radius: 50%; 
@@ -720,10 +802,10 @@ export default {
         border: none;
         box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
     }
-    .fade-enter-active, .fade-leave-active {
+    .login-enter-active, .login-leave-active {
         transition: opacity .4s;
     }
-    .fade-enter, .fade-leave-to {
+    .login-enter, .login-leave-to {
         opacity: 0;
     }
     .my-blur{
@@ -791,6 +873,12 @@ export default {
         opacity: 0;
         transform: translateY(-20px);
     }
+    .regi-enter-active, .fade-leave-active {
+        transition: all 0.7s;
+    }
+    .regi-enter, .fade-leave-to {
+        transform: translateY(80px);
+    }
     .unable {
         opacity: 0.5;
         cursor: auto;
@@ -823,10 +911,26 @@ export default {
         top:-25px;
         left: 47px;
     }
-     .play-mode-tip .in{
+    .play-mode-tip .in{
         border:11px solid transparent;
         border-bottom-color:#fff;
         top:-22px;
         left: 48px;
+    }
+    .register-tip {
+        width: 160px;
+        height:50px;
+        text-align: center;
+        line-height: 50px;
+        color: white;
+        font-weight: bold;
+        border:1px solid #DCDCDC;
+        background-color: #21bf73;
+        position: absolute;
+        left: 50px;
+        bottom: 40px;
+        border-radius: 6px;
+        box-shadow: 0px 10px 30px -5px rgba(0, 0, 0, .19);
+        z-index: 999;
     }
 </style>
