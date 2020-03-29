@@ -10,7 +10,9 @@ export default {
     
   },
   data: () => ({
-    //
   }),
+  created(){
+    document.body.removeChild(document.getElementById('Loading')) 
+  }
 };
 </script>

@@ -1,27 +1,17 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import music from './views/music.vue'
-import songDetail from './views/music-child/song-detail.vue'
-import myCollection from './views/music-child/my-collection.vue'
-import search from './views/music-child/search.vue'
-import explore from './views/music-child/explore.vue'
-import myPlayList from './views/music-child/my-playlist.vue'
-import playListDetail from './views/music-child/playlist-detail.vue'
-import albumDetail from './views/music-child/album-detail.vue'
-import artistDetail from './views/music-child/artist-detail.vue'
 
 Vue.use(Router)
 
 var router = new Router({
-    mode: 'history',
     routes:[
         { 
             path:'/',
-            redirect:'/music/artist-detail'
+            redirect:'/music/explore'
         },
         {
             path:'/music',
-            component:music,
+            component: () => import('./views/music.vue'),
             meta: {
                 keepAlive: false, //此组件不需要被缓存
             },
@@ -29,19 +19,19 @@ var router = new Router({
                 {
                     path: 'explore',
                     name: 'explore',
-                    component: explore,
+                    component: () => import('./views/music-child/explore.vue'),
                 },
                 {
                     path:'song-detail',
                     name:'song-detail',
-                    component:songDetail,
+                    component: () => import('./views/music-child/song-detail.vue'),
                     meta: {
                         keepAlive: false, //此组件需要被缓存
                     }
                 },
                 {
                     path:'my-collection',
-                    component:myCollection,
+                    component: () => import('./views/music-child/my-collection.vue'),
                     meta: {
                         keepAlive: false, //此组件不需要被缓存
                     }
@@ -49,20 +39,20 @@ var router = new Router({
                 {
                     path:'search',
                     name:"search",
-                    component:search,
+                    component: () => import('./views/music-child/search.vue'),
                     meta: {
-                        keepAlive: true, //此组件不需要被缓存
+                        keepAlive: true, //此组件需要被缓存
                     }
                 },
                 {
                     path:'my-playlist',
                     name: 'my-playlist',
-                    component:myPlayList,
+                    component: () => import('./views/music-child/my-playlist.vue'),
                 },
                 {
                     path: 'playlist-detail',
                     name: 'playlist-detail',
-                    component: playListDetail,
+                    component: () => import('./views/music-child/playlist-detail.vue'),
                     meta: {
                         keepAlive: true,
                         ifDoFresh: false
@@ -71,12 +61,20 @@ var router = new Router({
                 {
                     path:'album-detail',
                     name: 'album-detail',
-                    component: albumDetail,
+                    component: () => import('./views/music-child/album-detail.vue'),
+                    meta: {
+                        keepAlive: true,
+                        ifDoFresh: false
+                    }
                 },
                 {
                     path:'artist-detail',
                     name: 'artist-detail',
-                    component: artistDetail,
+                    component: () => import('./views/music-child/artist-detail.vue'),
+                    meta: {
+                        keepAlive: true,
+                        ifDoFresh: false
+                    }
                 }
             ]
         },
