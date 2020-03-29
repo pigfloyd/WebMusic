@@ -59,15 +59,6 @@ export default {
             submittedNames: []
         }
     },
-    watch:{
-        $route(now,old){
-            if(now.path == "/music/my-playlist/playlist-detail" && old.path =="/music/my-playlist"){
-                this.list_flag = false
-            } else{
-                this.list_flag = true
-            }
-        }
-    },
     components:{
         'com-pl':play_list,
         VueLoading
@@ -85,9 +76,9 @@ export default {
     methods:{
         login(){
             //登录
-            this.$axios.post('/login/status')
+            this.$axios.get(`http://106.52.206.154:3000/login/cellphone?phone=15362145526&password=sgl22222`)
             .then((res) => { 
-                return this.$axios.get('/user/playlist?uid=' + res.data.profile.userId)
+                return this.$axios.get('http://106.52.206.154:3000/user/playlist?uid=' + res.data.profile.userId)
             }).then((res) => {
                 //获取歌单信息
                 this.list_flag = true
@@ -168,5 +159,4 @@ export default {
         line-height: 58px;
         cursor: pointer;
     }
-    
 </style>

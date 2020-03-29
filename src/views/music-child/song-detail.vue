@@ -2,6 +2,7 @@
     <div class="bg2" ref="bg2">
         <div class="lyrics" id="lyrics">
             <div class="left">
+                <div class="header"><i class="fa fa-arrow-left fa-2x" style="color: rgb(30, 144, 255); cursor: pointer" @click="goBack"></i></div>
                 <div class="song-img">
                     <div class="cd-img"></div>
                     <img alt="" :src="picUrl">
@@ -53,12 +54,10 @@ export default {
     name: 'song',
     data(){
         return{
-            liHeight: 0,
             oLRC:{
                 ar: "", //演唱者
                 al: "", //专辑名
                 by: "", //歌词制作人
-                offset: 0, //时间补偿值，单位毫秒，用于调整歌词整体位置
                 ms: [] //歌词数组{t:时间,c:歌词}
             },
             myP:'myP',
@@ -84,9 +83,9 @@ export default {
     },
     mounted() {
         //按 id 搜索歌词
-        this.$axios.get('/lyric?id=' + this.$route.params.id)
+        this.$axios.get('/api/server/lyric.php/lyric?songId=' + this.$route.params.id)
             .then((res) => {
-                this.createLrcObj(res.data.lrc.lyric)
+                this.createLrcObj(res.data.songLyric)
             })
             .catch((err) => {
                 console.log(err)    
@@ -95,8 +94,6 @@ export default {
         this.songName = this.$route.params.songName
         this.art = this.$route.params.art
         this.albumName = this.$route.params.albumName
-        this.liHeight = this.$refs['li'].style.height
-        console.log(this.liHeight)
     },
     methods: {
         //解析lrc
@@ -151,6 +148,9 @@ export default {
             }
             this.comments.unshift(c)
             this.toSendComment = ''
+        },
+        goBack() {
+            this.$router.go(-1)
         }
     },
     props: ['audioId','albumPicUrl','alName','sName','artist'],
@@ -159,12 +159,11 @@ export default {
             this.oLRC.ar = ''
             this.oLRC.al = ''
             this.oLRC.by = ''
-            this.oLRC.offset = 0
             this.oLRC.ms = []
             //按 id 搜索歌词
-            this.$axios.get('/lyric?id=' + this.audioId)
+            this.$axios.get('/api/server/lyric.php/lyric?songId=' + this.audioId)
             .then((res) => {
-                this.createLrcObj(res.data.lrc.lyric)
+                this.createLrcObj(res.data.songLyric)
             })
             .catch((err) => {
                 console.log(err)    
@@ -194,7 +193,6 @@ export default {
         height:100%;
         width:100%;
         overflow:auto;
-        scroll-padding: 10px;
     }
     .lyrics{
         display: flex;
@@ -210,29 +208,41 @@ export default {
     .left{
         height:100%;
         width:40%;  
-        padding-top:50px;
+        padding-top:10px;
         text-align: center;
+    }
+    .left .header {
+        text-align: start;
+        height: 50px;
+        width: 100%;
+        margin-left: 14px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        background-color: #fff;
     }
     .left .comments-btn {
         display: inline-block;
         margin-top: 13px;
+        margin-left: 40px;
         height: 40px;
         width: 200px;
         line-height: 40px;
         font-size: 14px;
-        color: grey;
-        background-color: #f1f3f4;
-        border-radius: 8px;
+        color: black;
+        background-color: #fff;
+        border-radius: 4px;
         font-weight: bold;
         cursor: pointer;
         border: 1px solid #DCDCDC;
+        box-shadow: 0 10px 25px -8px rgba(0, 0, 0, .19);
     }
     .left p{
         margin: 0;
+        margin-left: 40px;
         padding: 0;
         margin-top: 105px;
         font-size: 32px;
-        text-shadow: 0 15px 12px rgba(0, 0, 0, 0.2);
+        text-shadow: 0px 7px 5px lightgray;
         font-weight: bold;
         font-family: 'Franklin Gothic medium', 'Arial Narrow', Arial, sans-serif;
     }
@@ -241,6 +251,7 @@ export default {
         color:black;
         display:block;
         margin-top:10px;
+        margin-left: 40px;
         font-weight: bold;
         font-family:  'Franklin Gothic medium' 'Arial Narrow', Arial, sans-serif;
         opacity: 0.5;

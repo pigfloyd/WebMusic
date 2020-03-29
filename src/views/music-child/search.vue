@@ -20,6 +20,7 @@
                         </div>
                 </div>
             </div>
+            <div class="haha">你可以试着搜索歌曲“诚实”或者专辑“台风”再或者艺术家“野外”。^_^</div>
             <vue-loading type="spin" color="#DCDCDC" :size="{ width: '50px', height: '50px' }" v-show="loadFlag" style="margin-top: 180px"></vue-loading>    
             <div class="result" v-show="flag">
                 <div class="selection">
@@ -27,7 +28,7 @@
                     <span :class="[currentSelect === 1 ? 'item active' : 'item']" @click="select(1)">专辑</span>
                     <span :class="[currentSelect === 2 ? 'item active' : 'item']" @click="select(2)">艺术家</span>
                 </div>
-                <table class="table" v-show="currentSelect === 0" @click="closeKwh">
+                <table class="table" v-if="currentSelect === 0" @click="closeKwh">
                     <thead class="th-color">
                         <tr>
                             <th scope="col"></th>
@@ -39,36 +40,38 @@
                         </tr>
                     </thead>
                     <transition-group name="fade" tag="tbody">
-                        <tr v-for="(item,index) in arr" :key="item"
+                        <tr v-for="(item,index) in songs" :key="item"
                          @mouseover="mouseOver(index)"
                          @mouseleave="mouseLeave">
                             <td>
-                                <img src="../../assets/images/cd.png" alt="" v-show="!(index==current)">
-                                <i class="fa fa-play fa-lg play-btn"  v-show="index==current" @click="play(item.id,item.name,item.artists[0].name,item.album.name,item.album.id)"></i>
+                                <img :src="item.albumPic" alt="" v-show="!(index==current)" class="songPic">
+                                <i class="fa fa-play fa-lg play-btn"  v-show="index==current" @click="play(item.songId,item.songName,item.songSinger,item.albumName, item.albumPic)"></i>
                             </td>
                             <td>
                                 <i class="fa fa-plus fa-lg item" aria-hidden="true" @click="addToList(item)"></i>
                             </td>
-                            <td v-text="item.name" ></td>
-                            <td v-text="item.artists[0].name" @click="goToArtist" class="item"></td>
-                            <td v-text="item.album.name" @click="goToAlbum" class="item"></td>
+                            <td v-text="item.songName" ></td>
+                            <td v-text="item.songSinger" @click="goToArtist" class="item"></td>
+                            <td v-text="item.albumName" @click="goToAlbum(item.albumId)" class="item"></td>
                             <td><i class="fa fa-plus-square-o fa-lg item" aria-hidden="true" @click="saveToPl"></i></td>
                         </tr>
                     </transition-group>
                 </table>
-                <div class="album" v-show="currentSelect === 1">
+                <div class="album" v-if="currentSelect === 1">
                     <album v-for="(item,index) in albumList"
                         :key="index"
-                        :name="item.name"
+                        :name="item.albumName"
+                        :albumId="item.albumId"
+                        :picUrl="item.albumPic"
                         >
                     </album>
                 </div>
-                <div class="artist" v-show="currentSelect === 2">
+                <div class="artist" v-if="currentSelect === 2">
                     <div class="art"
-                         v-for="(item,index) in albumList"
+                         v-for="(item,index) in artists"
                         :key="index">
-                        <img src="" alt="" @click="goToArtist">
-                        <div class="name">{{ item.name}}</div>
+                        <img :src="item.singerPic" alt="" @click="goToArtist(item.singerId)">
+                        <div class="name">{{ item.singerName}}</div>
                     </div>
                 </div>
             </div>
@@ -123,45 +126,15 @@ export default {
     data(){
         return{
             keyword:'',
-            arr:'',
+            songs:'',
             flag: false,
             loadFlag: false,
             kwhFlag: true,
             kwHistory: [],
             current:'-1',
             currentSelect: 0,
-            albumList: [
-                {
-                    name: 'test1'
-                },
-                {
-                    name: 'test2'
-                },
-                {
-                    name: 'test3'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-            ],
+            albumList: [],
+            artists: [], 
             selected: ''
         }
     },
@@ -178,29 +151,56 @@ export default {
         //搜索歌曲
         search(bool = true){
             if(bool){
-                if(localStorage.getItem('kwHistory') === ''){
+                if(localStorage.getItem('kwHistory') === null){
                     let str = JSON.stringify([this.keyword])
                     localStorage.setItem('kwHistory', str)
                 } else {
                     let arr = JSON.parse(localStorage.getItem('kwHistory'))
-                    let result = JSON.stringify(arr.concat([this.keyword]))
-                    localStorage.setItem('kwHistory', result)
-                    this.kwHistory = arr.concat([this.keyword])
+                    if(!arr.some(item => item === this.keyword)){
+                        let result = JSON.stringify(arr.concat([this.keyword]))
+                        localStorage.setItem('kwHistory', result)
+                        this.kwHistory = arr.concat([this.keyword])
+                    }
+                    
                 }
             }
             this.kwhFlag = false
             this.flag = false
             this.loadFlag = true
-            this.$axios.get('/search?keywords=' + this.keyword)
-            .then((res) => {
-                this.loadFlag = false
-                this.arr = res.data.result.songs
-                this.flag = true
-                //this.$emit('setPl', this.arr)
-            })
-            .catch((err) => {
-                console.log(err)
-            })
+            if(this.currentSelect === 0){
+                this.$axios.get('/api/server/search.php/search?type=1&keywords=' + this.keyword)
+                .then((res) => {
+                    this.loadFlag = false
+                    this.songs = res.data.songs
+                    this.flag = true
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            } else if(this.currentSelect === 1){
+                this.$axios.get('/api/server/search.php/search?type=10&keywords=' + this.keyword)
+                .then((res) => {
+                    this.loadFlag = false
+                    this.albumList = res.data.albums
+                    this.flag = true
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            } else {
+                this.$axios.get('/api/server/search.php/search?type=100&keywords=' + this.keyword)
+                .then((res) => {
+                    this.loadFlag = false
+                    this.artists = res.data.singers
+                    this.flag = true
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            }
         },
         //点击搜索词
         clickKeyword(kw){
@@ -217,22 +217,23 @@ export default {
             this.current = -1
         },
         //播放歌曲
-        play(id,name,art,albumName,albumId){
+        play(id, songName, songSinger, albumName, albumPic){
             this.$emit('myBlur')
-            var albumPicUrl
-            this.$axios.get('/album?id=' + albumId)
-            //搜索对应的专辑图片
-            .then((res) => {
-                albumPicUrl = res.data.album.picUrl
-                this.$emit('loadImg',albumPicUrl)
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-            this.$axios.get('/song/url?id=' + id)
+            // var albumPicUrl
+            // this.$axios.get('http://106.52.206.154:3000/album?id=' + albumId)
+            // //搜索对应的专辑图片
+            // .then((res) => {
+            //     console.log(res.data)
+            //     albumPicUrl = res.data.album.picUrl
+            //     this.$emit('loadImg',albumPicUrl)
+            // })
+            // .catch((err) => {
+            //     console.log(err)
+            // })
+            this.$axios.get('/api/server/song_resource.php/songResource?songId=' + id)
             .then((res) => {
                 console.log(res.data)
-                this.$emit('func',res.data.data[0].url,name,art,albumName,id)
+                this.$emit('func', res.data.songUrl, songName, songSinger, albumName, id, albumPic)
             })
             .catch((err) => {
                 console.log(err)
@@ -240,19 +241,55 @@ export default {
         },
         //加入待播列表
         addToList(item){
+            console.log('846')
             this.$emit('addToList', item)
         },
         //转跳到艺术家详情路由
-        goToArtist(){
-            this.$router.push('artist-detail')
+        goToArtist(id){
+            this.$router.push({
+                name: 'artist-detail',
+                params: {
+                    singerId: id
+                }
+            })
         },
         //转跳到专辑详情路由
-        goToAlbum(){
-            this.$router.push('album-detail')
+        goToAlbum(id){
+            this.$router.push({
+                name: 'album-detail',
+                params: {
+                    albumId: id
+                }
+            })
         },
         //选择搜索
         select(index){
             this.currentSelect = index
+            if(this.currentSelect === 1){
+                this.$axios.get('/api/server/search.php/search?type=10&keywords=' + this.keyword)
+                .then((res) => {
+                    console.log(res.data)
+                    this.loadFlag = false
+                    this.flag = true
+                    this.albumList = res.data.albums
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            } else {
+                this.$axios.get('/api/server/search.php/search?type=100&keywords=' + this.keyword)
+                .then((res) => {
+                    console.log(res.data)
+                    this.loadFlag = false
+                    this.flag = true
+                    this.artists = res.data.singers
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            }
         },
         //点击其他地方关闭历史搜索
         closeKwh() {
@@ -357,7 +394,9 @@ export default {
         color: rgba(0, 0, 0, 0.5);
     }
     tbody tr:hover{
-        box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, .19);
+        background-color: rgb(30, 144, 255);
+        color: white;
+        box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, .19);    
     }
     tbody img{
         height:25px;
@@ -365,7 +404,6 @@ export default {
     }
     .form-control{
         border: 1px solid #DCDCDC;
-        box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
         font-weight: bold;
     }
     .input-group-prepend span{
@@ -480,9 +518,6 @@ export default {
     .item{
         cursor: pointer;
     }
-    .item:hover {
-        color: rgb(30, 144, 255);
-    }
     .th-color {
         color: #FFF;
         background-image: linear-gradient(rgb(30, 144, 255), rgb(5, 119, 230));
@@ -499,5 +534,22 @@ export default {
     }
     .fade2-enter, .fade2-leave-to {
         opacity: 0;
+    }
+    .td img {
+        content: url(../../assets/images/cd.png)
+    }
+    .songPic {
+        height: 30px;
+        width: 30px;
+        border-radius: 2px;
+    }
+    .haha {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 40px;
+        color: #dcdcdc;
+        font-size: 20px;
+        font-weight: bold;
     }
 </style>

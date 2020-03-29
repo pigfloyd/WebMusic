@@ -3,19 +3,21 @@
         <div class="artist-detail-bd">
             <div class="header"><i class="fa fa-arrow-left fa-2x" style="color: rgb(30, 144, 255); cursor: pointer" @click="goBack"></i><span>艺术家详情</span></div>
             <div class="desc">
-                <img src="../../assets/images/artist.jpg" alt="">
-                <div class="name">Pink Floyd</div>
+                <img :src="pic" alt="">
+                <div class="name" v-text="name"></div>
             </div>
             <div class="title">发行专辑</div>
             <div class="albums">
-                <album v-for="(item,index) in albumList"
+                <album v-for="(item,index) in albums"
                     :key="index"
-                    :albumName="item.name"
+                    :name="item.album.albumName"
+                    :picUrl="item.album.albumPic"
+                    :albumId="item.album.albumId"
                     >
                 </album>
             </div>
             <div class="title">简介</div>
-            <div class="intro">平克·弗洛伊德是英国摇滚乐队，他们最初以迷幻与太空摇滚音乐赢得知名度，而后逐渐发展为前卫摇滚音乐。平克·弗洛伊德以哲学的歌词、音速实验、创新的专辑封面艺术与精致的现场表演闻名。他们名列最成功的摇滚乐队之一，并在全球坐拥超过二亿的唱片销售量，其中美国就包办了7450万。</div>
+            <div class="intro" v-text="profile"></div>
         </div>
     </el-scrollbar>
 </template>
@@ -24,42 +26,44 @@ import album from '../../components/com-album.vue'
 export default {
     data(){
         return {
-            albumList: [
-                {
-                    name: 'test1'
-                },
-                {
-                    name: 'test2'
-                },
-                {
-                    name: 'test3'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-                {
-                    name: 'test4'
-                },
-            ]
+            name: '',
+            pic: '',
+            albums: [],
+            profile: ''
         }
     },
+    beforeRouteLeave(to, from, next){
+        if(to.name === 'search'){
+            from.meta.ifDoFresh = true
+            next()
+        } else {
+            next()
+        }
+    },
+    //重新加载专辑信息
+    activated() {
+        this.$axios.get('/api/server/singer.php/singer?singerId=' + this.$route.params.singerId)
+        .then(res => {
+            this.name = res.data.singer[0].singerName
+            this.pic = res.data.singer[0].singerPic
+            this.profile = res.data.singer[0].singerProfile
+            this.albums = res.data.singer[1]
+        })
+        .catch(err => {
+            console.log(err)
+        })
+    },
     mounted(){
-     
+        this.$axios.get('/api/server/singer.php/singer?singerId=' + this.$route.params.singerId)
+        .then(res => {
+            this.name = res.data.singer[0].singerName
+            this.pic = res.data.singer[0].singerPic
+            this.profile = res.data.singer[0].singerProfile
+            this.albums = res.data.singer[1]
+        })
+        .catch(err => {
+            console.log(err)
+        })
     },
     methods:{
         goBack() {
@@ -107,7 +111,7 @@ export default {
         border: 1px solid #DCDCDC;
     }
     .desc .name {
-        font-size: 46px;
+        font-size: 42px;
         font-weight: bold;
         text-shadow: 0 15px 12px rgba(0, 0, 0, 0.2);
     }

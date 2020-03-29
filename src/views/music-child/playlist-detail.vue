@@ -22,6 +22,10 @@
                                 <i class="fa fa-play"></i>
                                 播放全部
                             </div>
+                            <div class='delete-btn'>
+                                <i class="fa fa-trash-o" aria-hidden="true"></i> 
+                                删除歌单
+                            </div>
                         </div>
                     </div>
                     <table class="table">
@@ -77,10 +81,10 @@ export default {
     //重新加载歌单详情数据
     activated() {
         if(this.$route.meta.ifDoFresh){
-            this.$route.meta.ifDoFresh = false;
+            this.$route.meta.ifDoFresh = false
             this.resultFlag = false
             this.loadFlag = true
-            this.$axios.get('/playlist/detail?id=' + this.$route.params.playlistId)
+            this.$axios.get('http://106.52.206.154:3000/playlist/detail?id=' + this.$route.params.playlistId)
             .then(res => {
                 var str = ''
                 for(let i = 0; i < res.data.privileges.length; i++){
@@ -88,7 +92,7 @@ export default {
                 }
                 str = str.slice(0,str.length-1)
                 //获取指定歌单详细信息
-                return this.$axios.get('/song/detail?ids=' + str)
+                return this.$axios.get('http://106.52.206.154:3000/song/detail?ids=' + str)
             })
             .then(res => {
                 this.resultFlag = true
@@ -102,7 +106,7 @@ export default {
         }
     },
     mounted(){
-        this.$axios.get('/playlist/detail?id=' + this.$route.params.playlistId)
+        this.$axios.get('http://106.52.206.154:3000/playlist/detail?id=' + this.$route.params.playlistId)
         .then(res => {
             var str = ''
             for(let i = 0; i < res.data.privileges.length; i++){
@@ -110,7 +114,7 @@ export default {
             }
             str = str.slice(0,str.length-1)
             //获取指定歌单详细信息
-            return this.$axios.get('/song/detail?ids=' + str)
+            return this.$axios.get('http://106.52.206.154:3000/song/detail?ids=' + str)
         })
         .then(res => {
             this.resultFlag = true
@@ -134,21 +138,21 @@ export default {
             this.$emit('myBlur')
             this.$emit('setIndex',index)
             var albumPicUrl
-            this.$axios.get('/album?id=' + albumId)
+            this.$axios.get('http://106.52.206.154:3000/album?id=' + albumId)
             //搜索对应的专辑图片
             .then((res) => {
                 albumPicUrl = res.data.album.picUrl
                 this.$emit('loadImg',albumPicUrl)
             })
             .catch((err) => {
-            console.log(err)
+                console.log(err)
             })
-            this.$axios.get('/song/url?id=' + id)
+            this.$axios.get('http://106.52.206.154:3000/song/url?id=' + id)
             .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumName,id,index)
+                this.$emit('func',res.data.data[0].url,name,art,albumName,id, null, index)
             })
             .catch((err) => {
-            console.log(err)
+                console.log(err)
             })
         },
         //加入待播列表
@@ -165,7 +169,7 @@ export default {
         },
     },
     components:{
-            VueLoading
+        VueLoading
     },
 }
 </script>
@@ -194,6 +198,8 @@ export default {
         color: rgba(0, 0, 0, 0.5);
     }
     tbody tr:hover{
+        background-color: rgb(30, 144, 255);
+        color: white;
         box-shadow: 0px 1px 4px 1px rgba(0, 0, 0, .19);
     }
     tbody img{
@@ -210,6 +216,9 @@ export default {
         overflow: hidden;
         border-radius: 15px 15px 0 0;
     }
+    .result .desc img {
+        content: url(../../assets/images/test.png);
+    }
     .mask{
         position: absolute;
         top     : 0;
@@ -217,7 +226,7 @@ export default {
         bottom  : 0;
         right   : 0;
         background:rgba(0,0,0,.5);
-        z-index: 998;
+        z-index: 899;
     }
     .bg-img{
         position: absolute;
@@ -233,12 +242,13 @@ export default {
         left: 0;
         width: 30%;
         height: 260px;
-        z-index: 999;
+        z-index: 900;
         display: flex;
         justify-content: center;
         align-items: center;
     }
     .content-left img {
+        content: url(../../assets/images/test.png);
         height: 220px;
         width: 220px;
         border: 1px solid gray;
@@ -249,7 +259,7 @@ export default {
         right: 0;
         width: 70%;
         height: 260px;
-        z-index: 999;
+        z-index: 900;
         padding-top: 16px;
     }
     .content-right .title {
@@ -274,11 +284,21 @@ export default {
         background-image: linear-gradient(rgb(255, 99, 71), rgb(220, 64, 36));
         margin-top: 10px;
     }
-    .item{
+    .content-right .delete-btn {
+        height: 30px;
+        line-height: 30px;
+        width: 80px;
+        font-size: 12px;
+        text-align: center;
+        font-weight: bold;
+        color:  grey;
+        margin-top: 32px;
+        background-color: white;
+        border-radius: 4px;
         cursor: pointer;
     }
-    .item:hover {
-        color: rgb(30, 144, 255);
+    .item{
+        cursor: pointer;
     }
     .fade-enter-active, .fade-leave-active {
         transition: all 0.7s;
@@ -286,5 +306,8 @@ export default {
     .fade-enter, .fade-leave-to {
         opacity: 0;
         transform: translateY(-20px);
+    }
+    .td img {
+        content: url(../../assets/images/cd.png)
     }
 </style>

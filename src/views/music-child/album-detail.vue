@@ -1,26 +1,26 @@
 <template>
     <div class="album-detail-bd">
-        <div class="header"><i class="fa fa-arrow-left fa-2x" style="color: rgb(30, 144, 255); cursor: pointer" @click="goBack"></i><span>艺术家详情</span></div>
-        <div class="content">
+        <div class="header"><i class="fa fa-arrow-left fa-2x" style="color: rgb(30, 144, 255); cursor: pointer" @click="goBack"></i><span>专辑详情</span></div>
+        <vue-loading type="spin" color="#DCDCDC" :size="{ width: '50px', height: '50px' }" v-show="loadFlag" style="margin-top: 200px"></vue-loading>    
+        <div class="content" v-show="!loadFlag">
             <div class="left">
-                <img src="../../assets/images/test.png" ref="albumImg">
-                <span class="album-name">Jinji Kikko</span>
-                <span class="album-artist">艺术家：落日飞车</span>
-                <div class="play-all-btn">
-                <i class="fa fa-play"></i>
-                播放全部
+                <img :src="albumPic">
+                <span class="album-name" v-text="albumName"></span>
+                <span class="album-artist">艺术家：{{ albumArtist }}</span>
+                <span class="album-artist">发行于 {{ albumRelease }}</span>
+                <div class="play-all-btn" @click="playAll">
+                    <i class="fa fa-play"></i>
+                    播放全部
                 </div>
                 <div class="my-divider"></div>
                 <div class="intro">
                     <div class="title">专辑介绍</div>
-                    <div class="text">金桔希子是落日飞车沈寂五年后的新作品,在成员的更迭后,重新探索新的曲风,从以往六零年代的车库摇滚晃入了七零年代的成人抒情,但仍然不改飞车轻松惬意,浪漫中又带着戏谑的情境氛围。
-                    金桔希子是集结过去、现在与未来的可爱女性角色,爱与昙花一现的具体想像。三首歌都是对她而唱,勃根地红是邀请希子随着微风乘上飞车,凝聚爱的能量,在黄昏的魔幻时刻,就能拥有穿越时空的超能力。第二首歌金桔,时光飞梭到了不可考的时代,这里是人类第一个文明聚落,宫殿里的公主金桔正在轻轻地召那唤能征服时间的恋人。
-                    最后一首歌金桔带着纽药回到未来,高度理性化的人类已没有情绪与爱的能力,而纽药就是让人类重新拥有爱的能力的良方。音乐风格受到了七零年代的白人抒情的影响,从Steely Dan, Hall & Oates, Wham, The Alan Parsons Project到Bobby Caldwell都是这张EP的概念原型,也预告了未来飞车可能的音乐路线。</div>
+                    <div class="text" v-text="albumProfile"></div>
                 </div>
             </div>
             <div class="right">
             <div class="r-header">
-                <div class="title">共 {{ albumList.length }} 首歌</div>
+                <div class="title">共 {{ songs.length }} 首歌</div>
                 <div class="collect-btn"><i class="fa fa-plus-square-o fa-lg" aria-hidden="true"></i>&nbsp;&nbsp;收藏</div>
             </div>
             <table class="table">
@@ -28,16 +28,16 @@
                     <tr class="th-color">
                         <th scope="col">#</th>
                         <th scope="col">歌名</th>
-                        <th scope="col">时长</th>
+                        <th scope="col">艺术家</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(item,index) in albumList" :key="index">
+                    <tr v-for="(item,index) in songs" :key="index">
                         <td>
-                            <i class="fa fa-play fa-lg play-btn"></i>
+                            <i class="fa fa-play fa-lg play-btn" @click="playSong(item.song.songId, item.song.songName, item.artist.singerName, albumPic, albumName, index)"></i>
                         </td>
-                        <td v-text="item.name"></td>
-                        <td v-text="item.duration"></td>
+                        <td v-text="item.song.songName"></td>
+                        <td v-text="item.artist.singerName"></td>
                     </tr>
                 </tbody>
             </table>
@@ -46,39 +46,95 @@
     </div>
 </template>
 <script>
-import ColorThief from '../../../node_modules/colorthief/dist/color-thief.mjs'
+import { VueLoading } from 'vue-loading-template'
 export default {
+    props: ['loadSongs'],
     data(){
         return {
-            albumList: [
-                {
-                    name: 'Burgundy Red',
-                    duration: '06:17'
-                },
-                {
-                    name: 'My Jinji',
-                    duration: '06:40'
-                },
-                {
-                    name: 'New Drug',
-                    duration: '04:44'
-                }
-            ]
+            loadFlag: true,
+            albumPic: '',
+            albumName: '',
+            albumArtist: '',
+            albumRelease: '',
+            albumProfile: '',
+            songs: [],
+        }
+    },
+    beforeRouteLeave(to, from, next){
+        if(to.name === 'search'){
+            from.meta.ifDoFresh = true
+            next()
+        } else {
+            next()
+        }
+    },
+    //重新加载专辑信息
+    activated(){
+        if(this.$route.meta.ifDoFresh){
+            this.$route.meta.ifDoFresh = false
+            this.loadFlag = true
+            this.loadSongs = false
+            this.$axios.get('/api/server/album.php/albumInfo?albumId=' + this.$route.params.albumId)
+            .then(res => {
+                this.albumPic = res.data.album[0].albumPic
+                this.albumName = res.data.album[0].albumName
+                this.albumArtist = res.data.album[0].albumArtist
+                this.albumRelease = res.data.album[0].albumRelease
+                this.albumProfile = res.data.album[0].albumProfile
+                this.songs = res.data.album[1]
+                this.loadFlag = false
+            })
         }
     },
     mounted(){
-        //设置专辑图片阴影
-        setTimeout(() => {
-            const colorThief = new ColorThief();
-            let img = this.$refs.albumImg
-            let color = colorThief.getColor(img)
-            img.style.boxShadow = `0px 30px 45px -10px  rgba(${color[0]}, ${color[1]}, ${color[2]}, 1)`
-        }, 0)
+        this.$axios.get('/api/server/album.php/albumInfo?albumId=' + this.$route.params.albumId)
+        .then(res => {
+            this.albumPic = res.data.album[0].albumPic
+            this.albumName = res.data.album[0].albumName
+            this.albumArtist = res.data.album[0].albumArtist
+            this.albumRelease = res.data.album[0].albumRelease
+            this.albumProfile = res.data.album[0].albumProfile
+            this.songs = res.data.album[1]
+            this.loadFlag = false
+        })
+        .catch(err => {
+            console.log(err)
+        })
     },
     methods:{
         goBack() {
             this.$router.go(-1)
+        },
+        playSong(id, name, artist, albumPic, albumName, index) {
+            this.$axios.get('/api/server/song_resource.php/songResource?songId=' + id)
+            .then(res => {
+                this.$emit('func',res.data.songUrl, name, artist, albumName, id, albumPic)
+                if(!this.loadSongs){
+                    this.$emit('setPl', this.songs)
+                }
+                this.$emit('setIndex', index)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        },
+        playAll() {
+            this.$axios.get('/api/server/song_resource.php/songResource?songId=' + this.songs[0].song.songId)
+            .then(res => {
+                console.log(this.songs)
+                this.$emit('func',res.data.songUrl, this.songs[0].song.songName, this.albumArtist, this.albumName, this.songs[0].song.songId, this.albumPic)
+                if(!this.loadSongs){
+                    this.$emit('setPl', this.songs)
+                }
+                this.$emit('setIndex', 0)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
         }
+    },
+    components: {
+        VueLoading
     }
 }
 </script>
@@ -124,10 +180,11 @@ export default {
     .content .left .album-name {
         display: block;
         font-weight: bold;
-        font-size: 34px;
+        font-size: 30px;
         margin-top: 18px;
     }
     .content .left .album-artist {
+        margin-top: 4px;
         font-weight: bold;
         color: #A9A9A9;
         display: block;
@@ -203,5 +260,8 @@ export default {
         color: black;
         background-image: linear-gradient(#fff, rgb(230, 230, 230));
         box-shadow: 0 1px 3px 1px  rgba(0, 0, 0, .19), inset 0 1px 0 rgba(255, 255, 255, .4);
+    }
+    .play-btn {
+        cursor: pointer;
     }
 </style>
