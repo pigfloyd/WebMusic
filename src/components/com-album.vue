@@ -1,7 +1,7 @@
 <template id="album">
     <div class="bg">
-        <router-link :to="{name:'album-detail',params:{albumId: albumId}}">
-            <img :src="picUrl" alt="">
+        <router-link :to="{name:'album-detail', params:{albumId: albumId}}">
+            <img :src="pic" alt="">
         </router-link>
         <p :title="name">{{ name }}</p>
     </div>
@@ -9,11 +9,10 @@
 
 <script>
 export default {
-    props:['name','picUrl','albumId'],
-    methods:{
-        openList(){
-            console.log(this.playlistId)
-        },
+    props:['name', 'pic', 'albumId'],
+    data() {
+        return {
+        }
     }
 }
 </script>

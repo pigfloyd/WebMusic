@@ -48,7 +48,7 @@ export default {
     data() {
         var checkUsername = (rule, value, callback) => {
             if (!value) {
-            return callback(new Error('用户名不能为空'))
+                return callback(new Error('用户名不能为空'))
             }
             else {
                 callback()
@@ -56,21 +56,21 @@ export default {
         };
         var validatePass = (rule, value, callback) => {
             if (value === '') {
-            callback(new Error('请输入密码'))
+                callback(new Error('请输入密码'))
             } else {
             if (this.regiForm.checkPass !== '') {
                 this.$refs.regiForm.validateField('checkPass');
             }
-            callback()
+                callback()
             }
         };
         var validatePass2 = (rule, value, callback) => {
             if (value === '') {
-            callback(new Error('请再次输入密码'))
+                callback(new Error('请再次输入密码'))
             } else if (value !== this.regiForm.pass) {
-            callback(new Error('两次输入密码不一致!'))
+                callback(new Error('两次输入密码不一致!'))
             } else {
-            callback()
+                callback()
             }
         };
         return {
@@ -123,10 +123,11 @@ export default {
                     .then(res => {
                         if(res.data.logintype === 1){
                             this.$refs['loginForm'].resetFields();
-                            localStorage.setItem('token', JSON.stringify(res.data.token))
-                            localStorage.setItem('username', JSON.stringify(res.data.account.userName))
-                            console.log(localStorage.getItem('username'))
+                            this.$cookies.set("token", res.data.token, 60 * 60 * 12)
+                            this.$cookies.set("username", res.data.account.userName, 60 * 60 * 12)
                             this.$emit('login', res.data.account.userName)
+                            this.$emit('getUserPl')
+                            this.$emit('getUserAlbum')
                         } else {
                             this.toast = '用户名或密码错误，登录失败！'
                             this.regiFail = true
@@ -165,10 +166,11 @@ export default {
                         }
                     })
                     .then(res => {
-                        console.log(res.data)
-                        localStorage.setItem('token', JSON.stringify(res.data.token))
-                        localStorage.setItem('username', JSON.stringify(res.data.account.userName))
+                        this.$cookies.set("token", res.data.token, 60 * 60 * 12)
+                        this.$cookies.set("username", res.data.account.userName, 60 * 60 * 12)
                         this.$emit('login', res.data.account.userName)
+                        this.$emit('getUserPl')
+                        this.$emit('getUserAlbum')
                     })
                     .catch(err => {
                         console.log(err)

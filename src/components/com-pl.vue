@@ -1,7 +1,7 @@
 <template>
     <div class="bg">
-        <router-link :to="{name:'playlist-detail',params:{playlistId: playlistId}}">
-            <img :src="picUrl" alt="">
+        <router-link :to="{name:'playlist-detail',params:{playlistInfo: {id: playlistId, name: name, pic: picUrl, date: date, coverId: coverId}}}">
+            <img :src="picUrl === null ? require('../assets/images/cd.png') : picUrl" alt="">
         </router-link>
         <p :title="name">{{ name }}</p>
     </div>
@@ -9,12 +9,7 @@
 
 <script>
 export default {
-    props:['name','picUrl','playlistId'],
-    methods:{
-        openList(){
-            console.log(this.playlistId)
-        },
-    }
+    props:['name', 'picUrl', 'playlistId', 'date', 'coverId']
 }
 </script>
 <style scoped>
@@ -28,6 +23,7 @@ export default {
     .bg img{
         height:120px;
         width:120px;
+        border: 1px solid #dcdcdc;
         box-shadow: 0px 20px 35px -10px  rgba(0, 0, 0, 0.2);
         border-radius: 6px; 
         cursor: pointer;

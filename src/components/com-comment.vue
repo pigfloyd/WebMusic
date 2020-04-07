@@ -1,33 +1,77 @@
 <template>
-    <div class="comment-bd">
-        <div class="avatar"></div>
-        <div class="content">
-            <div class="id-and-time">
-                <span class="id">{{ id }}</span>
-                <span class="time">{{ getTime() }}</span>
+    <div style="margin-bottom: 20px;">
+        <div class="comment-bd">
+            <img src="../assets/images/user.png" alt="" class="avatar">
+            <div class="content">
+                <div class="id-and-time">
+                    <span class="id">{{ username }}</span>
+                    <span class="time">{{ time }}</span>
+                    <span class="reply" @click="showInput">回复</span>
+                </div>
+                <div class="user-comment">{{ comment }}</div>
             </div>
-            <div class="user-comment">{{ comment }}</div>
         </div>
+        <div style="padding-left: 80px; padding-top: 8px" v-if="replyCont">
+            <div class="reply-comment">@{{ replyName }}：{{ replyCont }}</div>
+        </div>
+        <transition name="fade">
+            <div class="input-bd" v-if="isOpenInput">
+                <div class="input-group mb-3">
+                            <input
+                            v-model="cont"
+                            type="text"
+                            class="form-control"
+                            placeholder="">
+                            <div class="input-group-prepend">
+                                <span
+                                @click="closeInput"
+                                class="input-group-text"
+                                style="backgroundColor: white;cursor: pointer;border-left:0px;text-decoration:none;">
+                                    取消
+                                </span>
+                                <span
+                                @click="send"
+                                class="input-group-text"
+                                style="cursor: pointer;border-radius:0px 4px 4px 0px;border-left:0px;text-decoration:none;">
+                                    回复
+                                </span>
+                            </div>
+                    </div>
+            </div>
+        </transition>
     </div>
 </template>
 
 <script>
 export default {
-    props: ['id', 'time', 'comment'],
+    props: ['username', 'time', 'comment', 'replyCont', 'replyName', 'commentId'],
+    data(){
+        return {
+            isOpenInput: false,
+            cont: ''
+        }
+    },
     methods: {
-       getTime() {
-            var dtCur = new Date();
-            var yearCur = dtCur.getFullYear();
-            var monCur = dtCur.getMonth() + 1;
-            var dayCur = dtCur.getDate();
-            var hCur = dtCur.getHours();
-            var mCur = dtCur.getMinutes();
-            var sCur = dtCur.getSeconds();
-            var timeCur = yearCur + "-" + (monCur < 10 ? "0" + monCur : monCur) + "-"
-                    + (dayCur < 10 ? "0" + dayCur : dayCur) + " " + (hCur < 10 ? "0" + hCur : hCur)
-                    + ":" + (mCur < 10 ? "0" + mCur : mCur) + ":" + (sCur < 10 ? "0" + sCur : sCur);
-            return timeCur;
-       }
+        showInput(){
+            this.isOpenInput = true
+        },
+        closeInput(){
+            this.isOpenInput = false
+        },
+        send(){
+            this.$axios.get(`/api/server/addComment.php/addComment?commentCont=${this.cont}&songId=${this.$route.params.id}&replyId=${this.commentId}`, {
+                headers: {
+                    'Authorization': this.$cookies.get('token')                         
+                }
+            })
+            .then(res => {
+                if(res.data.status === 1){
+                    this.$emit('addComment', this.$cookies.get('username'), '刚刚', this.cont, this.comment, this.username, this.commentId)
+                    this.isOpenInput = false
+                    this.cont = ''
+                }
+            })
+        }
     }
 }
 </script>
@@ -36,7 +80,6 @@ export default {
         height: auto;
         width: 100%;
         display: flex;
-        margin-bottom: 20px;
     }
     .avatar {
         display: inline-block;
@@ -44,7 +87,7 @@ export default {
         width:60px;
         border-radius: 50%;
         background-color: #DCDCDC;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, .19);
+        box-shadow: 0 1px 1px rgba(0, 0, 0, .19);
         margin-right: 20px;
     }
     .content {
@@ -54,17 +97,44 @@ export default {
     }
     .id-and-time {
         height: 24px;
+        color: rgb(100, 100, 100);
     }
     .id-and-time .id {
         font-weight: bold;
-        font-size: 16px;
+        font-size: 18px;
         margin-right: 10px;
     }
     .id-and-time .time {
         color: #DCDCDC;
     }
     .user-comment {
-        padding-top: 4px;
+        padding-top: 6px;
         font-size: 14px;
+    }
+    .reply {
+        display: inline-block;
+        margin-left: 16px;
+        color: gray;
+        cursor: pointer;
+    }
+    .input-bd {
+        padding-left: 80px;
+        margin-top: 10px;
+    }
+    .fade-enter-active, .fade-leave-active {
+        transition: all 0.2s;
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0;
+    }
+    .reply-comment {
+        border-radius: 4px;
+        background-color: rgb(245, 245, 249);
+        height: auto;
+        width: 100%;
+        color: grey;
+        padding: 10px;
+        padding-left: 14px;
+        padding-right: 14px;
     }
 </style>

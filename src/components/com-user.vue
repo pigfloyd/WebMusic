@@ -16,11 +16,6 @@
 <script>
 export default {
     props: ['username'],
-    data() {
-        
-    },
-    mounted() {
-    },
     methods:{
         close(){
             this.$emit('close')
@@ -29,7 +24,6 @@ export default {
             this.$emit('logout')
         }
     },
-
 }
 </script>
 <style scoped>
