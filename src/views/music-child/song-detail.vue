@@ -15,16 +15,15 @@
             <div class="right">
                 <el-scrollbar style="height:100%; " ref="myScrollbar">
                     <ul> 
-                        <li v-for="(item,index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
+                        <li v-for="(item, index) in oLRC.ms" :key="index" class="my-list" :class="{'focus-lrc':current == index}">{{ item.c }}</li>
                     </ul>
                 </el-scrollbar>
-                
             </div>
         </div>
         <div class="comments">
             <div class="send-comment clearfix">
                  <div class="input-group mb-3" >
-                        <div class="avatar"></div>
+                        <img src="../../assets/images/user.png" alt="" class="avatar">
                         <input ref="search"
                         type="text"
                         style="display: inline-block"
@@ -37,10 +36,15 @@
                 </div>
             </div>
             <com-comment 
+                @addComment="addComment"
                 v-for="(item, index) in comments"
                 :key="index"
-                :id="item.id"
-                :comment="item.comment"
+                :time="item.commentTime"
+                :comment="item.commentCont"
+                :username="item.reviewerName"
+                :replyCont="item.replyCont"
+                :replyName="item.replyName"
+                :commentId="item.commentId"
                 >
             </com-comment>
         </div>
@@ -60,25 +64,40 @@ export default {
                 by: "", //歌词制作人
                 ms: [] //歌词数组{t:时间,c:歌词}
             },
-            myP:'myP',
+            myP: 'myP',
             current:null,
             picUrl:'',
             songName:'',
             art:'',
             albumName:'',
             toSendComment: '',
-            comments: [
-                {
-                    id: '孙亚',
-                    time: '',
-                    comment: '国国叠着戴了两个帽子上台，帽子上写着“千岛湖旅游”，后来丢给了台下观众，签售的时候我问他帽子是哪里来的，他说来的路上从出租车司机那里买的国国真的太可爱了全程被他可爱昏倒！'
-                },
-                 {
-                    id: '潘慧',
-                    time: '',
-                    comment: '金桔希子是集结过去、现在与未来的可爱女性角色,爱与昙花一现的具体想像。三首歌都是对她而唱,金桔是时光飞梭到了不可考的时代,这里是人类第一个文明聚落,宫殿里的公主金桔正在轻轻地召那唤能征服时间的恋人。'
-                },
-            ],
+            comments: [],
+        }
+    },
+    beforeRouteLeave(to, from, next){
+        if(to.name === 'my-playlist'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 3)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'my-collection'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 4)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'search'){
+            from.meta.ifDoFresh = true
+            this.$emit('setMenuBtn', 1)
+            next()
+        } else if(to.name === 'explore'){
+            this.$emit('setMenuBtn', 2)
+            next()
+        } else {
+            next()
         }
     },
     mounted() {
@@ -94,13 +113,15 @@ export default {
         this.songName = this.$route.params.songName
         this.art = this.$route.params.art
         this.albumName = this.$route.params.albumName
-    },
+        //按 id 搜索歌曲评论
+        this.getComments()
+   },
     methods: {
         //解析lrc
         createLrcObj(lrc){
             if(lrc.length==0) return;
             var lrcs = lrc.split('\n');//用回车拆分成数组
-            for(var i in lrcs) {//遍历歌词数组
+            for(let i in lrcs) {//遍历歌词数组
                 lrcs[i] = lrcs[i].replace(/(^\s*)|(\s*$)/g, ""); //去除前后空格
                 var t = lrcs[i].substring(lrcs[i].indexOf("[") + 1, lrcs[i].indexOf("]"));//取[]间的内容
                 var s = t.split(":");//分离:前后文字
@@ -127,9 +148,9 @@ export default {
                     }
                 }
             }
-            this.oLRC.ms.sort(function (a, b) {//按时间顺序排序
-                return a.t-b.t;
-            });
+            // this.oLRC.ms.sort(function (a, b) {//按时间顺序排序
+            //     return a.t-b.t;
+            // });
         },
         //歌词滚动同步
         focusLRC(index){
@@ -142,15 +163,63 @@ export default {
         },
         //发送评论
         sendComment(){
-            let c = {
-                id: '爱纳米',
-                comment: this.toSendComment
+            if(!this.$cookies.isKey('token')){
+                this.$emit('showLogin')
+            } else {
+                this.$axios.get(`/api/server/addComment.php/addComment?commentCont=${this.toSendComment}&songId=${this.$route.params.id}&replyId=${null}`, {
+                    headers: {
+                        'Authorization': this.$cookies.get('token')                         
+                    }
+                })
+                .then(res => {
+                    console.log(res.data)
+                    if(res.data.status === 1){
+                        let result = {
+                            reviewerName: this.$cookies.get('username'),
+                            commentCont: this.toSendComment,
+                            commentTime: '刚刚',
+                            commentId: res.data.commentId
+                        }
+                        this.comments.unshift(result)
+                        this.toSendComment = ''
+                    }
+                })
+            }  
+        },
+        addComment(username, time, cont, replyCont, reviewerName, commentId){
+            let result = {
+                commentCont: cont,
+                commentTime: time,
+                replyCont: replyCont,
+                replyName: username,
+                reviewerName: reviewerName,
+                commentId: commentId
             }
-            this.comments.unshift(c)
-            this.toSendComment = ''
+            this.comments.unshift(result)
         },
         goBack() {
             this.$router.go(-1)
+        },
+        //获得歌曲评论
+        getComments(){
+            this.$axios.get(`/api/server/comment.php/showComment?songId=` + this.audioId)
+            .then(res => {
+                if(res.data.status === 1){
+                    this.comments = res.data.commentsInfo
+                    this.comments.forEach(item => {
+                        if(item.replyId !== null){
+                            for(let a of res.data.commentsInfo){
+                                if(item.replyId === a.commentId){
+                                    item.replyCont = a.commentCont
+                                    item.replyName = a.reviewerName
+                                    break
+                                }
+                            }
+                        }
+                    })
+                }
+                console.log(this.comments)
+            })
         }
     },
     props: ['audioId','albumPicUrl','alName','sName','artist'],
@@ -168,6 +237,8 @@ export default {
             .catch((err) => {
                 console.log(err)    
             })
+            //获取评论
+            this.getComments()
         },
         'albumPicUrl': function(){
             this.picUrl = this.albumPicUrl
@@ -327,7 +398,6 @@ export default {
         height: 60px;
         margin-left: 20px;
         border: 1px solid #DCDCDC;
-        box-shadow: 0px 0px 5px 1px inset rgba(0, 0, 0, .19);
         font-weight: bold;
         border-radius: 7px; 
     }

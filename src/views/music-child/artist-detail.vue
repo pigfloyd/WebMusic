@@ -11,7 +11,7 @@
                 <album v-for="(item,index) in albums"
                     :key="index"
                     :name="item.album.albumName"
-                    :picUrl="item.album.albumPic"
+                    :pic="item.album.albumPic"
                     :albumId="item.album.albumId"
                     >
                 </album>
@@ -33,12 +33,31 @@ export default {
         }
     },
     beforeRouteLeave(to, from, next){
-        if(to.name === 'search'){
-            from.meta.ifDoFresh = true
+        if(to.name === 'my-playlist'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 3)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'my-collection'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 4)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'search'){
+            this.$emit('setMenuBtn', 1)
             next()
-        } else {
+        } else if(to.name === 'explore'){
+            this.$emit('setMenuBtn', 2)
+            next()
+        }  
+        else {
             next()
         }
+        from.meta.ifDoFresh = true
     },
     //重新加载专辑信息
     activated() {

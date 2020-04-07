@@ -7,51 +7,57 @@
                 </router-link>
                 <span>歌单详情</span>
             </div>
-            <vue-loading type="spin" color="#DCDCDC" :size="{ width: '50px', height: '50px' }" v-show="loadFlag" style="margin-top: 200px"></vue-loading>    
-            <div class="result" v-show="resultFlag">
+            <div class="result">
                     <div class="desc">
                         <div class="mask"></div>
-                        <img src="../../assets/images/test.png" alt="" class="bg-img">
+                        <img :src="coverPic === null ? require('../../assets/images/cd.png') : $route.params.playlistInfo.pic" alt="" class="bg-img">
                         <div class="content-left">
-                            <img src="../../assets/images/test.png" alt="">
+                            <img :src="coverPic === null ? require('../../assets/images/cd.png') : $route.params.playlistInfo.pic" alt="">
                         </div>
                         <div class="content-right">
-                            <p class='title'>用音乐保持你每天的嘴角上扬</p>
-                            <p class="create-time">于 2020-03-11 创建</p>
-                            <div class="play-all-btn">
+                            <p class='title' v-text="$route.params.playlistInfo.name"></p>
+                            <p class="create-time">于 {{ $route.params.playlistInfo.date }} 创建</p>
+                            <div class="play-all-btn" @click="play(songInfo[0].song.songId, songInfo[0].song.songName, songInfo[0].artist.singerName, songInfo[0].album.albumName, songInfo[0].song.songPic, 0)">
                                 <i class="fa fa-play"></i>
                                 播放全部
                             </div>
-                            <div class='delete-btn'>
-                                <i class="fa fa-trash-o" aria-hidden="true"></i> 
-                                删除歌单
+                            <div class="delete">
+                                <div class='delete-btn' @click="showDelete">
+                                    <i class="fa fa-trash-o fa-lg" aria-hidden="true"></i> 
+                                    {{ deleteText }}
+                                </div>
+                                <transition name="delete">
+                                    <div class="yes-no" v-show="isShowDelete" @click="closeDelete"><i class="fa fa-times fa-lg" aria-hidden="true"></i></div>
+                                </transition>
+                                <transition name="delete">
+                                    <div class="yes-no" v-show="isShowDelete" @click="deletePl"><i class="fa fa-check fa-lg" aria-hidden="true" style="color: #8FBC8F"></i></div>
+                                </transition>
                             </div>
                         </div>
                     </div>
-                    <table class="table">
+                    <vue-loading type="spin" color="#DCDCDC" :size="{ width: '50px', height: '50px' }" v-show="loadFlag" style="margin-top: 140px"></vue-loading>    
+                    <table class="table" v-show="resultFlag">
                         <thead class="th-color">
                             <tr>
-                                <th scope="col"></th>
-                                <th scope="col"></th>
+                                <th scope="col">#</th>
                                 <th scope="col">歌名</th>
                                 <th scope="col">艺术家</th>
                                 <th scope="col">专辑</th>
+                                <th scope="col">操作</th>
                             </tr>
                         </thead>
                         <transition-group name="fade" tag="tbody">
-                            <tr v-for="(item,index) in playListDetail" :key="item"
+                            <tr v-for="(item, index) in songInfo" :key="item"
                             @mouseover="mouseOver(index)"
                             @mouseleave="mouseLeave">
                                 <td>
-                                    <img src="../../assets/images/cd.png" alt="" v-show="!(index==current)">
-                                    <i class="fa fa-play fa-lg play-btn" style="cursor:pointer" v-show="index==current" @click="play(item.id,item.name,item.ar[0].name,item.al.name,item.al.id,index)"></i>
+                                    <img :src="item.song.songPic" alt="" v-show="!(index==current)">
+                                    <i class="fa fa-play fa-lg" style="cursor:pointer; margin-right: 10px" v-show="index==current" @click="play(item.song.songId, item.song.songName, item.artist.singerName, item.album.albumName, item.song.songPic, index)"></i>
                                 </td>
-                                <td>
-                                    <i class="fa fa-plus fa-lg item" aria-hidden="true" @click="addToList(item)"></i>
-                                </td>
-                                <td v-text="item.name"></td>
-                                <td v-text="item.ar[0].name" @click="goToArtist" class="item"></td>
-                                <td v-text="item.al.name" @click="goToAlbum" class="item"></td>
+                                <td v-text="item.song.songName"></td>
+                                <td v-text="item.artist.singerName" @click="goToArtist(item.artist.singerId)" class="item"></td>
+                                <td v-text="item.album.albumName" @click="goToAlbum(item.album.albumId)" class="item"></td>
+                                <td><i class="fa fa-trash-o fa-lg item" aria-hidden="true" @click="unSave(item.id, item.song.songId)"></i></td>
                             </tr>
                         </transition-group>
                     </table>
@@ -64,66 +70,64 @@ import { VueLoading } from 'vue-loading-template'
 export default {
     data(){
         return {
-            playListDetail:[],
+            coverPic: '',
+            songInfo: [],
             loadFlag: true,
             resultFlag: false,
-            current:'-1'
+            current:'-1',
+            isShowDelete: false,
+            deleteText: '删除歌单',
         }
     },
     beforeRouteLeave(to, from, next){
-        if(to.name === 'my-playlist'){
-            from.meta.ifDoFresh = true
-            next()
-        } else {
-            next()
+        if(to.name === 'search'){
+            this.$emit('setMenuBtn', 1)
+        } else if(to.name === 'explore'){
+            this.$emit('setMenuBtn', 2)
+        } else if(to.name === 'my-playlist'){
+            this.$emit('setMenuBtn', 3)
+        } else if(to.name === 'my-collection'){
+            this.$emit('setMenuBtn', 4)
         }
+        if(to.name !== 'artist-detail' || to.name !== 'album-detail'){
+            from.meta.ifDoFresh = true
+        } else {
+            to.meta.ifDoFresh = true
+        }
+        next()
     },
     //重新加载歌单详情数据
     activated() {
         if(this.$route.meta.ifDoFresh){
+            this.coverPic = this.$route.params.playlistInfo.pic
             this.$route.meta.ifDoFresh = false
             this.resultFlag = false
+            this.deleteText = '删除歌单'
+            this.isShowDelete = false
             this.loadFlag = true
-            this.$axios.get('http://106.52.206.154:3000/playlist/detail?id=' + this.$route.params.playlistId)
-            .then(res => {
-                var str = ''
-                for(let i = 0; i < res.data.privileges.length; i++){
-                    str = str + res.data.privileges[i].id + ','
+            this.$axios.get('/api/server/playlistDetail.php/songInfo?playlistId=' + this.$route.params.playlistInfo.id, {
+                headers: {
+                    'Authorization': this.$cookies.get('token')                         
                 }
-                str = str.slice(0,str.length-1)
-                //获取指定歌单详细信息
-                return this.$axios.get('http://106.52.206.154:3000/song/detail?ids=' + str)
             })
             .then(res => {
+                this.songInfo = res.data.songInfo
                 this.resultFlag = true
                 this.loadFlag = false
-                this.playListDetail = res.data.songs
-                this.$emit('setPl',this.playListDetail)
-            })
-            .catch(err => {
-                console.log(err)
             })
         }
     },
     mounted(){
-        this.$axios.get('http://106.52.206.154:3000/playlist/detail?id=' + this.$route.params.playlistId)
-        .then(res => {
-            var str = ''
-            for(let i = 0; i < res.data.privileges.length; i++){
-                str = str + res.data.privileges[i].id + ','
+        this.coverPic = this.$route.params.playlistInfo.pic
+        this.$axios.get('/api/server/playlistDetail.php/songInfo?playlistId=' + this.$route.params.playlistInfo.id, {
+            headers: {
+                'Authorization': this.$cookies.get('token')                         
             }
-            str = str.slice(0,str.length-1)
-            //获取指定歌单详细信息
-            return this.$axios.get('http://106.52.206.154:3000/song/detail?ids=' + str)
         })
         .then(res => {
+            this.songInfo = res.data.songInfo
             this.resultFlag = true
             this.loadFlag = false
-            this.playListDetail = res.data.songs
-            this.$emit('setPl',this.playListDetail)
-        })
-        .catch(err => {
-            console.log(err)
         })
     },
     methods:{
@@ -134,39 +138,95 @@ export default {
             this.current = -1
         },
         //播放歌曲
-        play(id,name,art,albumName,albumId,index){
-            this.$emit('myBlur')
-            this.$emit('setIndex',index)
-            var albumPicUrl
-            this.$axios.get('http://106.52.206.154:3000/album?id=' + albumId)
-            //搜索对应的专辑图片
-            .then((res) => {
-                albumPicUrl = res.data.album.picUrl
-                this.$emit('loadImg',albumPicUrl)
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-            this.$axios.get('http://106.52.206.154:3000/song/url?id=' + id)
-            .then((res) => {
-                this.$emit('func',res.data.data[0].url,name,art,albumName,id, null, index)
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
-        //加入待播列表
-        addToList(item){
-            this.$emit('addToList', item)
+        play(id, name, art, albumName, pic, index){
+            if(this.songInfo.length !== 0){
+                this.$emit('myBlur')
+                this.$axios.get('/api/server/song_resource.php/songResource?songId=' + id)
+                .then(res => {
+                    this.$emit('func', res.data.songUrl, name, art, albumName, id, pic, index)
+                    this.$emit('setPl', this.songInfo, false)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            }
         },
         //转跳到艺术家详情路由
-        goToArtist(){
-            this.$router.push('artist-detail')
+        goToArtist(id){
+            this.$router.push({
+                name: 'artist-detail',
+                params: {
+                    singerId: id
+                }
+            })
         },
         //转跳到专辑详情路由
-        goToAlbum(){
-            this.$router.push('album-detail')
+        goToAlbum(id){
+            this.$router.push({
+                name: 'album-detail',
+                params: {
+                    albumId: id
+                }
+            })        
         },
+        //展示删除按钮
+        showDelete(){
+            this.isShowDelete = !this.isShowDelete
+            this.deleteText = '确认删除？'
+        },
+        //取消删除操作
+        closeDelete(){
+            this.isShowDelete = false
+            this.deleteText = '删除歌单'
+        },
+        //删除歌单
+        deletePl(){
+            this.$axios.get('/api/server/deletePlaylist.php/deletePlaylist?playlistId=' + this.$route.params.playlistInfo.id, {
+                headers: {
+                    'Authorization': this.$cookies.get('token')                         
+                }
+            })
+            .then(res => {
+                if(res.data.status === 1){
+                    this.$emit('getUserPl')
+                    this.$router.push('my-playlist')
+                }
+            })
+        },
+        //取消收藏
+        unSave(id, songId){
+            let refreshId
+            //let coverPic
+            if(this.songInfo.length === 1){
+                refreshId = null
+            }
+            else if(id === this.$route.params.playlistInfo.coverId){
+                refreshId = this.songInfo[this.songInfo.length - 2].id
+                //coverPic = this.songInfo[this.songInfo.length - 2].song.songPic
+            } else {
+                refreshId = 0
+            }
+            this.$axios.get(`/api/server/deleteSong.php/deleteSong?deleteId=${id}&refreshId=${refreshId}&playlistId=${this.$route.params.playlistInfo.id}`, {
+                headers: {
+                    'Authorization': this.$cookies.get('token')                         
+                }
+            })
+            .then(res => {
+                if(res.data.status === 1){
+                    this.songInfo = this.songInfo.filter(item => item.song.songId !== songId)
+                    //如果歌单封面改变，则重新获取歌单
+                    if(refreshId){
+                        this.$emit('getUserPl')
+                    } else if(refreshId === null){
+                        this.coverPic = null
+                        this.$emit('getUserPl')
+                    }
+                }
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        }  
     },
     components:{
         VueLoading
@@ -216,9 +276,6 @@ export default {
         overflow: hidden;
         border-radius: 15px 15px 0 0;
     }
-    .result .desc img {
-        content: url(../../assets/images/test.png);
-    }
     .mask{
         position: absolute;
         top     : 0;
@@ -235,7 +292,7 @@ export default {
         transform: translate(-50%, -50%);
         filter: blur(8px);
         background-size: cover;
-        zoom: 1.1;
+        zoom: 1.4;
     }
     .content-left {
         position: absolute;
@@ -248,7 +305,6 @@ export default {
         align-items: center;
     }
     .content-left img {
-        content: url(../../assets/images/test.png);
         height: 220px;
         width: 220px;
         border: 1px solid gray;
@@ -282,7 +338,13 @@ export default {
         font-weight: bold;
         color: white;
         background-image: linear-gradient(rgb(255, 99, 71), rgb(220, 64, 36));
-        margin-top: 10px;
+        margin-top: 28px;
+    }
+    .content-right .delete {
+        height: auto;
+        width: auto;
+        display: flex;
+        margin-top: 28px;
     }
     .content-right .delete-btn {
         height: 30px;
@@ -291,21 +353,39 @@ export default {
         font-size: 12px;
         text-align: center;
         font-weight: bold;
-        color:  grey;
-        margin-top: 32px;
+        color: grey;
         background-color: white;
         border-radius: 4px;
         cursor: pointer;
+    }
+    .yes-no {
+        color: rgb(255, 99, 71);
+        margin-left: 6px;
+        height: 30px;
+        width: 30px;
+        text-align: center;
+        line-height: 30px;
+        background-color: white;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
     }
     .item{
         cursor: pointer;
     }
     .fade-enter-active, .fade-leave-active {
-        transition: all 0.7s;
+        transition: all 0.4s;
     }
     .fade-enter, .fade-leave-to {
         opacity: 0;
         transform: translateY(-20px);
+    }
+    .delete-enter-active, .delete-leave-active {
+        transition: all 0.4s;
+    }
+    .delete-enter, .delete-leave-to {
+        opacity: 0;
+        transform: translateX(-10px);
     }
     .td img {
         content: url(../../assets/images/cd.png)

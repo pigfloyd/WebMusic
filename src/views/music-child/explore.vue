@@ -75,15 +75,47 @@ export default {
         ]
       }
     },
+    beforeRouteLeave(to, from, next){
+        if(to.name === 'my-playlist'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 3)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'my-collection'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 4)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'search'){
+          this.$emit('setMenuBtn', 1)
+          next()
+        } else {
+          next()
+        }
+    },
     mounted() {
       
     },
     methods:{
       goToAlbum(){
-        this.$router.push('album-detail')
+        this.$router.push({
+          name: 'album-detail',
+          params: {
+            albumId: 5
+          }
+        })
       },
       goToArtist(){
-        this.$router.push('artist-detail')
+        this.$router.push({
+            name: 'artist-detail',
+            params: {
+              singerId: 7
+            }
+        })
       },
     },
     components: {

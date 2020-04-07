@@ -21,7 +21,7 @@
             <div class="right">
             <div class="r-header">
                 <div class="title">共 {{ songs.length }} 首歌</div>
-                <div class="collect-btn"><i class="fa fa-plus-square-o fa-lg" aria-hidden="true"></i>&nbsp;&nbsp;收藏</div>
+                <div class="collect-btn" @click="collect" v-text="collectText"></div>
             </div>
             <table class="table">
                 <thead>
@@ -43,12 +43,26 @@
             </table>
             </div>
         </div>
+        <transition name="tip">
+            <div class="collect-success" v-show="isCollectOk">
+                <i class="fa fa-check-circle fa-lg" aria-hidden="true" style="color: #8FBC8F"></i>
+                专辑已收藏
+            </div>
+        </transition>
+        <transition name="tip">
+            <div class="collect-success" v-show="isRemove">
+                <i class="fa fa-exclamation-circle fa-lg" aria-hidden="true" style="color: rgb(255, 99, 71);"></i>
+                已取消收藏
+            </div>
+        </transition>
     </div>
 </template>
 <script>
 import { VueLoading } from 'vue-loading-template'
+const collected = '已收藏'
+const collect = '收藏专辑'
 export default {
-    props: ['loadSongs'],
+    props: ['userAlbum'],
     data(){
         return {
             loadFlag: true,
@@ -58,22 +72,47 @@ export default {
             albumRelease: '',
             albumProfile: '',
             songs: [],
+            collectText: '',
+            isCollectOk: false,
+            isRemove: false
         }
     },
     beforeRouteLeave(to, from, next){
-        if(to.name === 'search'){
-            from.meta.ifDoFresh = true
+        if(to.name === 'my-playlist'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 3)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'my-collection'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 4)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'search'){
+            this.$emit('setMenuBtn', 1)
+            next()
+        } else if(to.name === 'explore'){
+            this.$emit('setMenuBtn', 2)
             next()
         } else {
             next()
         }
+        from.meta.ifDoFresh = true
     },
     //重新加载专辑信息
     activated(){
         if(this.$route.meta.ifDoFresh){
+            if(this.userAlbum.some(item => item.albumId === this.$route.params.albumId)){
+                this.collectText = collected
+            } else {
+                this.collectText = collect
+            }
             this.$route.meta.ifDoFresh = false
             this.loadFlag = true
-            this.loadSongs = false
             this.$axios.get('/api/server/album.php/albumInfo?albumId=' + this.$route.params.albumId)
             .then(res => {
                 this.albumPic = res.data.album[0].albumPic
@@ -87,6 +126,11 @@ export default {
         }
     },
     mounted(){
+        if(this.userAlbum.some(item => item.albumId === this.$route.params.albumId)){
+            this.collectText = collected
+        } else {
+            this.collectText = collect
+        }
         this.$axios.get('/api/server/album.php/albumInfo?albumId=' + this.$route.params.albumId)
         .then(res => {
             this.albumPic = res.data.album[0].albumPic
@@ -109,9 +153,7 @@ export default {
             this.$axios.get('/api/server/song_resource.php/songResource?songId=' + id)
             .then(res => {
                 this.$emit('func',res.data.songUrl, name, artist, albumName, id, albumPic)
-                if(!this.loadSongs){
-                    this.$emit('setPl', this.songs)
-                }
+                this.$emit('setPl', this.songs, true)
                 this.$emit('setIndex', index)
             })
             .catch((err) => {
@@ -121,16 +163,42 @@ export default {
         playAll() {
             this.$axios.get('/api/server/song_resource.php/songResource?songId=' + this.songs[0].song.songId)
             .then(res => {
-                console.log(this.songs)
                 this.$emit('func',res.data.songUrl, this.songs[0].song.songName, this.albumArtist, this.albumName, this.songs[0].song.songId, this.albumPic)
-                if(!this.loadSongs){
-                    this.$emit('setPl', this.songs)
-                }
+                this.$emit('setPl', this.songs, true)
                 this.$emit('setIndex', 0)
             })
             .catch((err) => {
                 console.log(err)
             })
+        },
+        collect(){
+            if(this.$cookies.isKey('token')){
+                this.$axios.get('/api/server/operateAlbum.php/operateAlbum?albumId=' + this.$route.params.albumId, {
+                    headers: {
+                        'Authorization': this.$cookies.get('token')        
+                    }
+                })
+                .then(res => {
+                    console.log(res.data)
+                    if(res.data.status === 1){
+                        this.$emit('getUserAlbum')
+                        this.collectText = collected
+                        this.isCollectOk = true
+                        setTimeout(() => {
+                            this.isCollectOk = false
+                        }, 2000)
+                    } else if(res.data.status === 2){
+                        this.$emit('getUserAlbum')
+                        this.collectText = collect
+                        this.isRemove = true
+                        setTimeout(() => {
+                            this.isRemove = false
+                        }, 2000)
+                    }
+                })
+            } else {
+                this.$emit('showLogin')
+            }
         }
     },
     components: {
@@ -145,6 +213,7 @@ export default {
         padding: 10px;
         padding-left: 14px;
         overflow: auto;
+        position: relative;
     }
     .header {
         height: 50px;
@@ -263,5 +332,27 @@ export default {
     }
     .play-btn {
         cursor: pointer;
+    }
+    .collect-success {
+        position: absolute;
+        right: 10px;
+        top: 2%;
+        height: 40px;
+        line-height: 40px;
+        width: auto;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 6px;
+        border: 1px solid #dcdcdc;
+        box-shadow: 0 15px 15px -10px rgba(0, 0, 0, .19);
+        font-weight: bold;
+        text-align: center;
+        color: gray;
+    }
+    .tip-enter-active, .tip-leave-active {
+        transition: opacity 0.5s;
+    }
+    .tip-enter, .tip-leave-to {
+        opacity: 0;
     }
 </style>

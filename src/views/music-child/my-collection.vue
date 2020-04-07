@@ -1,12 +1,13 @@
 <template>
     <div class="collection-bd">
         <div class="header">我收藏的专辑</div>
-        <div class="album" v-show="currentSelect === 1">
-            <album v-for="(item,index) in albumList"
+        <div class="album">
+            <com-album v-for="(item, index) in userAlbum"
                 :key="index"
-                :name="item.name"
-                >
-            </album>
+                :name="item.albumName"
+                :pic="item.albumPic"
+                :albumId="item.albumId">
+            </com-album>
         </div>
     </div>
 </template>
@@ -14,22 +15,30 @@
 <script>
 import album from '../../components/com-album.vue'
 export default {
-    name:'collection',
-    data(){
-        return{
-           isLoginOpen: false
+    props: ['userAlbum'],
+    beforeRouteLeave(to, from, next){
+        switch(to.name) {
+            case 'search': {
+                this.$emit('setMenuBtn', 1)
+                break
+            }
+            case 'explore': {
+                this.$emit('setMenuBtn', 2)
+                break
+            }
+            case 'my-playlist': {
+                this.$emit('setMenuBtn', 3)
+                break
+            }
+            default: break
         }
+        next()
     },
     methods: {
-        show() {
-            this.isLoginOpen = true
-        },
-        close() {
-            this.isLoginOpen = false
-        },
+
     },
     components:{
-        'album': album,
+        'com-album': album,
     }
     
 }

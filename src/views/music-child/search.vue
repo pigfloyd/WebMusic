@@ -32,7 +32,6 @@
                     <thead class="th-color">
                         <tr>
                             <th scope="col"></th>
-                            <th scope="col"></th>
                             <th scope="col">歌名</th>
                             <th scope="col">艺术家</th>
                             <th scope="col">专辑</th>
@@ -47,13 +46,10 @@
                                 <img :src="item.albumPic" alt="" v-show="!(index==current)" class="songPic">
                                 <i class="fa fa-play fa-lg play-btn"  v-show="index==current" @click="play(item.songId,item.songName,item.songSinger,item.albumName, item.albumPic)"></i>
                             </td>
-                            <td>
-                                <i class="fa fa-plus fa-lg item" aria-hidden="true" @click="addToList(item)"></i>
-                            </td>
                             <td v-text="item.songName" ></td>
                             <td v-text="item.songSinger" @click="goToArtist" class="item"></td>
                             <td v-text="item.albumName" @click="goToAlbum(item.albumId)" class="item"></td>
-                            <td><i class="fa fa-plus-square-o fa-lg item" aria-hidden="true" @click="saveToPl"></i></td>
+                            <td><i class="fa fa-plus fa-lg item" aria-hidden="true" @click="saveInPl(item.songId)"></i></td>
                         </tr>
                     </transition-group>
                 </table>
@@ -62,7 +58,7 @@
                         :key="index"
                         :name="item.albumName"
                         :albumId="item.albumId"
-                        :picUrl="item.albumPic"
+                        :pic="item.albumPic"
                         >
                     </album>
                 </div>
@@ -74,6 +70,10 @@
                         <div class="name">{{ item.singerName}}</div>
                     </div>
                 </div>
+            </div>
+            <div class="sorry" v-show="isNotFound">
+                <img src="../../assets/images/sorry.png" alt="">
+                <span>抱歉，未搜索到相关信息。</span>
             </div>
             <transition name="fade2">
                 <div class="keywords-bd" v-show="kwhFlag && kwHistory.length !== 0">
@@ -110,11 +110,22 @@
                 label="我的歌单"
                 label-for="name-input"
                 >
-                    <b-form-radio v-model="selected" name="some-radios" value="A">Option A</b-form-radio>
-                    <b-form-radio v-model="selected" name="some-radios" value="B">Option B</b-form-radio>
+                    <b-form-radio v-for="(item, index) in userPlaylist" :key="index" v-model="selected" name="some-radios" :value="item.playlistId">{{ item.playlistName }}</b-form-radio>
                 </b-form-group>
             </form>
         </b-modal>
+        <transition name="tip">
+             <div class="collect-success" v-show="isCollect">
+                <i class="fa fa-check-circle fa-lg" aria-hidden="true" style="color: #8FBC8F"></i>
+                已收藏至歌单
+            </div>
+        </transition>
+        <transition name="tip">
+             <div class="collect-success" v-show="isCollectFail">
+                <i class="fa fa-exclamation-circle fa-lg" aria-hidden="true" style="color: rgb(255, 99, 71);"></i>
+                歌曲已存在该歌单内
+            </div>
+        </transition>
     </el-scrollbar> 
 </template>
 <script>
@@ -122,7 +133,8 @@ import '../../assets/css/search.css'
 import { VueLoading } from 'vue-loading-template'
 import album from '../../components/com-album.vue'
 export default {
-    name:'search',
+    name: 'search',
+    props: ['userPlaylist'],
     data(){
         return{
             keyword:'',
@@ -135,10 +147,37 @@ export default {
             currentSelect: 0,
             albumList: [],
             artists: [], 
-            selected: ''
+            selected: '',
+            isNotFound: false,
+            playList: [],
+            selectedSongId: null, //要收藏歌的 id
+            isCollect: false,
+            isCollectFail: false
         }
     },
-    mounted () { 
+    beforeRouteLeave(to, from, next){
+        if(to.name === 'my-playlist'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 3)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'my-collection'){
+            if(this.$cookies.isKey("token")){
+                this.$emit('setMenuBtn', 4)
+                next()
+            } else {
+                this.$emit('showLogin')
+            }
+        } else if(to.name === 'explore'){
+            this.$emit('setMenuBtn', 2)
+            next()
+        } else {
+            next()
+        }
+    },
+    mounted () {
         this.$refs.search.focus();
         this.kwHistory = JSON.parse(localStorage.getItem('kwHistory'))
         if(this.kwHistory === null){
@@ -146,60 +185,82 @@ export default {
         } else {
             this.kwhFlag = true
         }
+        
     },
     methods: {
         //搜索歌曲
         search(bool = true){
-            if(bool){
-                if(localStorage.getItem('kwHistory') === null){
-                    let str = JSON.stringify([this.keyword])
-                    localStorage.setItem('kwHistory', str)
-                } else {
-                    let arr = JSON.parse(localStorage.getItem('kwHistory'))
-                    if(!arr.some(item => item === this.keyword)){
-                        let result = JSON.stringify(arr.concat([this.keyword]))
-                        localStorage.setItem('kwHistory', result)
-                        this.kwHistory = arr.concat([this.keyword])
+            if(this.keyword !== ''){
+                if(bool){
+                    if(localStorage.getItem('kwHistory') === null){
+                        let str = JSON.stringify([this.keyword])
+                        localStorage.setItem('kwHistory', str)
+                    } else {
+                        let arr = JSON.parse(localStorage.getItem('kwHistory'))
+                        if(!arr.some(item => item === this.keyword)){
+                            let result = JSON.stringify(arr.concat([this.keyword]))
+                            localStorage.setItem('kwHistory', result)
+                            this.kwHistory = arr.concat([this.keyword])
+                        }
+                        
                     }
-                    
                 }
-            }
-            this.kwhFlag = false
-            this.flag = false
-            this.loadFlag = true
-            if(this.currentSelect === 0){
-                this.$axios.get('/api/server/search.php/search?type=1&keywords=' + this.keyword)
-                .then((res) => {
-                    this.loadFlag = false
-                    this.songs = res.data.songs
-                    this.flag = true
-                    //this.$emit('setPl', this.arr)
-                })
-                .catch((err) => {
-                    console.log(err)
-                })
-            } else if(this.currentSelect === 1){
-                this.$axios.get('/api/server/search.php/search?type=10&keywords=' + this.keyword)
-                .then((res) => {
-                    this.loadFlag = false
-                    this.albumList = res.data.albums
-                    this.flag = true
-                    //this.$emit('setPl', this.arr)
-                })
-                .catch((err) => {
-                    console.log(err)
-                })
-            } else {
-                this.$axios.get('/api/server/search.php/search?type=100&keywords=' + this.keyword)
-                .then((res) => {
-                    this.loadFlag = false
-                    this.artists = res.data.singers
-                    this.flag = true
-                    //this.$emit('setPl', this.arr)
-                })
-                .catch((err) => {
-                    console.log(err)
-                })
+                this.isNotFound = false
+                this.kwhFlag = false
+                this.flag = false
+                this.loadFlag = true
+                if(this.currentSelect === 0){
+                    this.$axios.get('/api/server/search.php/search?type=1&keywords=' + this.keyword)
+                    .then((res) => {
+                        this.loadFlag = false
+                        if(res.data.songs.length === 0){
+                            this.isNotFound = true
+                            this.songs = []
+                        } else {
+                            this.isNotFound = false
+                            this.songs = res.data.songs
+                        }
+                        this.flag = true
+                        //this.$emit('setPl', this.arr)
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+                } else if(this.currentSelect === 1){
+                    this.$axios.get('/api/server/search.php/search?type=10&keywords=' + this.keyword)
+                    .then((res) => {
+                        this.loadFlag = false
+                        if(res.data.albums.length === 0){
+                            this.isNotFound = true
+                            this.albumList = []
+                        } else {
+                            this.isNotFound = false
+                            this.albumList = res.data.albums
+                        }
+                        this.flag = true
+                        //this.$emit('setPl', this.arr)
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+                } else {
+                    this.$axios.get('/api/server/search.php/search?type=100&keywords=' + this.keyword)
+                    .then((res) => {
+                        this.loadFlag = false
+                        if(res.data.singers.length === 0){
+                            this.isNotFound = true
+                            this.artists = []
+                        } else {
+                            this.isNotFound = false
+                            this.artists = res.data.singers
+                        }
+                        this.flag = true
+                        //this.$emit('setPl', this.arr)
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+                }
             }
         },
         //点击搜索词
@@ -232,17 +293,11 @@ export default {
             // })
             this.$axios.get('/api/server/song_resource.php/songResource?songId=' + id)
             .then((res) => {
-                console.log(res.data)
                 this.$emit('func', res.data.songUrl, songName, songSinger, albumName, id, albumPic)
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
-        //加入待播列表
-        addToList(item){
-            console.log('846')
-            this.$emit('addToList', item)
         },
         //转跳到艺术家详情路由
         goToArtist(id){
@@ -264,14 +319,38 @@ export default {
         },
         //选择搜索
         select(index){
+            this.isNotFound = false
             this.currentSelect = index
-            if(this.currentSelect === 1){
+            if(this.currentSelect === 0){
+                this.$axios.get('/api/server/search.php/search?type=1&keywords=' + this.keyword)
+                .then((res) => {
+                    this.loadFlag = false
+                    if(res.data.songs.length === 0){
+                        this.isNotFound = true
+                        this.songs = []
+                    } else {
+                        this.isNotFound = false
+                        this.songs = res.data.songs
+                    }
+                    this.flag = true
+                    //this.$emit('setPl', this.arr)
+                })
+                .catch((err) => {
+                    console.log(err)
+                })
+            }
+            else if(this.currentSelect === 1){
                 this.$axios.get('/api/server/search.php/search?type=10&keywords=' + this.keyword)
                 .then((res) => {
-                    console.log(res.data)
                     this.loadFlag = false
                     this.flag = true
-                    this.albumList = res.data.albums
+                    if(res.data.albums.length === 0){
+                        this.isNotFound = true
+                        this.albumList = []
+                    } else {
+                        this.isNotFound = false
+                        this.albumList = res.data.albums
+                    }
                     //this.$emit('setPl', this.arr)
                 })
                 .catch((err) => {
@@ -280,10 +359,15 @@ export default {
             } else {
                 this.$axios.get('/api/server/search.php/search?type=100&keywords=' + this.keyword)
                 .then((res) => {
-                    console.log(res.data)
                     this.loadFlag = false
                     this.flag = true
-                    this.artists = res.data.singers
+                    if(res.data.singers.length === 0){
+                        this.isNotFound = true
+                        this.artists = []
+                    } else {
+                        this.isNotFound = false
+                        this.artists = res.data.singers
+                    }
                     //this.$emit('setPl', this.arr)
                 })
                 .catch((err) => {
@@ -323,15 +407,48 @@ export default {
             if (!this.checkFormValidity()) {
                 return
             }
+            if(!this.selected){
+                return
+            }
+            this.$axios.get(`/api/server/addSong.php/addSong?playlistId=${this.selected}&songId=${this.selectedSongId}`, {
+                headers: {
+                    'Authorization': this.$cookies.get('token')                         
+                }
+            })
+            .then(res => {
+                if(res.data.status === 2){
+                    this.collectTip()
+                    this.$emit('getUserPl')
+                    this.$emit('reloadPl')
+                    this.selected = null
+                } else {
+                    this.collectFailTip()
+                }
+            })
             // Hide the modal manually
             this.$nextTick(() => {
                 this.$bvModal.hide('my-modal')
             })
         },
         //收藏
-        saveToPl() {
+        saveInPl(songId) {
+            this.selectedSongId = songId
             this.$bvModal.show('my-modal')
-        }
+        },
+        //打开收藏成功提示框
+        collectTip(){
+            this.isCollect = true
+            setTimeout(() => {
+                this.isCollect = false
+            }, 3000)
+        },
+        //打开收藏失败提示框
+        collectFailTip(){
+            this.isCollectFail = true
+            setTimeout(() => {
+                this.isCollectFail = false
+            }, 2000)
+        },
     },
     components: {
         VueLoading,
@@ -414,9 +531,10 @@ export default {
     .play-btn{
         color: black;
         cursor: pointer;
+        margin-right: 10px;
     }
     .keywords-bd {
-        z-index: 999;
+        z-index: 400;
         position: absolute;
         left: 50%;
         top: 80px;
@@ -551,5 +669,45 @@ export default {
         color: #dcdcdc;
         font-size: 20px;
         font-weight: bold;
+    }
+    .sorry {
+        position: absolute;
+        top: 38%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        height: 80px;
+        line-height: 80px;
+    }
+    .sorry img {
+        height: 80px;
+        width: 80px;
+        margin-right: 20px;
+    }
+    .sorry span {
+        font-weight: bold;
+        font-size: 22px;
+    }
+    .collect-success {
+        position: absolute;
+        right: 20px;
+        top: 4%;
+        height: 50px;
+        line-height: 50px;
+        width: auto;
+        padding-left: 20px;
+        padding-right: 20px;
+        border-radius: 8px;
+        border: 1px solid #dcdcdc;
+        box-shadow: 0 25px 30px -20px rgba(0, 0, 0, .19);
+        font-weight: bold;
+        text-align: center;
+        color: gray;
+    }
+    .tip-enter-active, .tip-leave-active {
+        transition: all 0.5s;
+    }
+    .tip-enter, .tip-leave-to {
+        transform: translateX(100%);
     }
 </style>
