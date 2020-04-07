@@ -7,52 +7,62 @@
                     <span v-text="user.nickname" v-show="isLogin"></span>
                     <span v-show="!isLogin">登录 / 注册</span>
                 </div>
-                <router-link to="/music/search" :class="[menuBtn === 1 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(1)">
+                <router-link to="/music/search" :class="[menuBtn === 1 ? 'my-list clicked' : 'my-list']">
                     <i class="fa fa-search fa-lg" aria-hidden="true"></i>
                 </router-link>
-                <router-link to="/music/explore" :class="[menuBtn === 2 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(2)">发现音乐</router-link>      
-                <router-link to="/music/my-playlist" :class="[menuBtn === 3 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(3)">我的歌单</router-link>
-                <router-link to="/music/my-collection" :class="[menuBtn === 4 ? 'my-list clicked' : 'my-list']" @click.native="switchCss(4)">收藏柜</router-link>
+                <router-link to="/music/explore" :class="[menuBtn === 2 ? 'my-list clicked' : 'my-list']">发现音乐</router-link>      
+                <router-link to="/music/my-playlist" :class="[menuBtn === 3 ? 'my-list clicked' : 'my-list']">我的歌单</router-link>
+                <router-link to="/music/my-collection" :class="[menuBtn === 4 ? 'my-list clicked' : 'my-list']">收藏柜</router-link>
             </div>
         </div>
         <div class="right-content">
             <div class="right-content-bg">
                 <transition name="login">
-                    <com-login v-show="loginFlag" class="my-login" @close="closeLogin" @login="logined"></com-login>
+                    <com-login v-show="loginFlag" class="my-login" @close="closeLogin" @login="logined" @getUserPl="getUserPl" @getUserAlbum="getUserAlbum"></com-login>
                 </transition>
                 <transition name="login">
                     <com-user v-show="userFlag" class="my-login" @close="closeUser" @logout="logout" :username="user.nickname"></com-user>
                 </transition>
                 <router-view ref="child"
-                    @addToList="addToList"
                     @func="playSong" 
                     @loadImg="loadImg"
                     @myBlur="myBlur"
                     @setPl="setPl"
                     @setIndex="setIndex"
+                    @newPl="newPl"
+                    @showLogin="showLogin"
+                    @setMenuBtn="setMenuBtn"
+                    @getUserPl="getUserPl"
                     :class="{'my-blur' : loginFlag}"
                     :audioId="audio.id"
                     :albumPicUrl="audio.albumPicUrl"
                     :alName="audio.albumName"
                     :sName="audio.name"
                     :artist="audio.art"
+                    :userPlaylist="userPlaylist"
+                    :userAlbum="userAlbum"
                     v-if="!$route.meta.keepAlive">
                 </router-view>
                 <keep-alive>
                     <router-view ref="child"
-                    @addToList="addToList"
                     @func="playSong" 
                     @setPl="setPl"
                     @loadImg="loadImg"
                     @setIndex="setIndex"
                     @myBlur="myBlur"
+                    @getUserPl="getUserPl"
+                    @showLogin="showLogin"
+                    @setMenuBtn="setMenuBtn"
+                    @newPl="newPl"
+                    @getUserAlbum="getUserAlbum"
+                    :userAlbum="userAlbum"
                     :class="{'my-blur' : loginFlag}"
                     :audioId="audio.id"
                     :albumPicUrl="audio.albumPicUrl"
                     :alName="audio.albumName"
                     :sName="audio.name"
                     :artist="audio.art"
-                    :loadSongs="loadSongs"
+                    :userPlaylist="userPlaylist"
                     v-if="$route.meta.keepAlive">
                 </router-view>
                 </keep-alive>
@@ -117,8 +127,9 @@
                 v-model="audio.volValue">
                 </range-slider>
                 <button class="random-btn" @click="switchPlayMode">
-                    <i class="fa fa-random fa-1x" v-show="!playModeFlag"></i>
-                    <i class="fa fa-arrows-h fa-1x" v-show="playModeFlag"></i>
+                    <i class="fa fa-random fa-1x" v-show="isRandom"></i>
+                    <i class="fa fa-arrows-h fa-1x" v-show="isNormal"></i>
+                    <i class="fa fa-repeat fa-1x" v-show="isCircle"></i>
                 </button>
                  <button :class="[isListOpen ? 'random-btn active' : 'random-btn']" @click="openList">
                     <i class="fa fa-list fa-1x" ></i>
@@ -146,7 +157,7 @@
                                 <th scope="col">艺术家</th>
                             </tr>
                         </thead>
-                        <transition-group name="fade" tag="tbody">
+                        <tbody>
                             <tr v-for="(item, index) in toPlayList" :key="item">
                                 <td>
                                     <i class="fa fa-play-circle" aria-hidden="true" v-show="current === index"></i> 
@@ -154,7 +165,7 @@
                                 <td>{{ item.song.songName | ellipsis2 }}</td>
                                 <td>{{ item.artist.singerName | ellipsis2 }}</td>
                             </tr>
-                        </transition-group>
+                        </tbody>
                     </table>
                 </el-scrollbar>
             </div>  
@@ -169,6 +180,7 @@
         <transition name="regi">
             <div class="register-tip" v-show="isTip2Open" v-text="toast"></div>
         </transition>
+        
     </div>
 </template>
 
@@ -178,10 +190,15 @@ import 'vue-range-slider/dist/vue-range-slider.css'
 export default {
     mounted(){
         this.toPlayList = this.regularList
-        if(localStorage.getItem('token')){
+        //检测是否登录
+        if(this.$cookies.isKey("token")){
             this.isLogin = true
-            this.user.nickname = JSON.parse(localStorage.getItem('username'))
+            this.user.nickname = this.$cookies.get("username")
             this.user.pic_url = require('../assets/images/test.png')
+            //获取用户歌单
+            this.getUserPl()
+            //获取用户收藏专辑
+            this.getUserAlbum()
         } else {
             this.user.pic_url = require('../assets/images/user.png')
         }
@@ -189,10 +206,9 @@ export default {
     name:'music',
     data(){
         return{
-            menuBtn: 0,
+            menuBtn: 1,
             btnPlay:true,
             btnVol:true,
-            playModeFlag: true,
             audio:{
                 id:'',
                 url:'',
@@ -227,7 +243,11 @@ export default {
             toast: '',
             isLogin: false,
             userFlag: false,
-            loadSongs: false, //是否加载待播列表
+            userPlaylist: [], //用户的歌单
+            userAlbum: [], //用户收藏的专辑
+            isRandom: false,
+            isNormal: true,
+            isCircle: false
         }
     },
     filters: {
@@ -308,25 +328,24 @@ export default {
         },
         //切到下一首歌
         next(){
-            if(this.toPlayList.length !== 0){
-                if(this.current == this.toPlayList.length -1){
+            if(this.toPlayList.length >= 2){
+                if(this.current == this.toPlayList.length - 1){
                     this.current = 0
-                    this.playNext(this.current)
                 } else {
                     this.current++
-                    this.playNext(this.current)
                 }
+                this.playNext(this.current)
             }
         },
         //切到上一首歌
         prev(){
-            if(this.toPlayList.length !== 0){
+            if(this.toPlayList.length >= 2 ){
                 if(this.current == 0){
-                    this.current = this.toPlayList.length
+                    this.current = this.toPlayList.length - 1
                 } else {
                     this.current--
-                    this.playNext(this.current)
                 }
+                this.playNext(this.current)
             }
         },
         //静音
@@ -353,7 +372,10 @@ export default {
             this.audio.currentTime = parseInt(this.$refs.audio.currentTime)
             if(this.$refs.audio.currentTime == this.$refs.audio.duration){
                 this.btnPlay = !this.btnPlay
-                if(this.toPlayList.length != 0){
+                if(this.isCircle){
+                    this.playNext(this.current)
+                }
+                else if(this.toPlayList.length !== 0){
                     //播放待播列表的下一首
                     this.current++
                     if(this.current == this.toPlayList.length){
@@ -369,7 +391,7 @@ export default {
                     this.$refs.child.focusLRC(i)
             }
         },
-        //
+        //切歌
         playNext(index){
             this.myBlur() //模糊封面
             this.audio.albumId = this.toPlayList[index].song.songId
@@ -377,14 +399,26 @@ export default {
             //获取歌曲信息
             this.$axios.get('/api/server/song_resource.php/songResource?songId=' + this.toPlayList[index].song.songId)
             .then(res => {
-                console.log('下一首')
-                this.playSong(res.data.songUrl, 
-                this.toPlayList[index].song.songName, 
-                null,
-                null, 
-                this.toPlayList[index].song.songId,
-                null, 
-                index)
+                //若是专辑歌单
+                if(!this.toPlayList[0].album){
+                    this.playSong(res.data.songUrl, 
+                    this.toPlayList[index].song.songName, 
+                    null,
+                    null, 
+                    this.toPlayList[index].song.songId,
+                    null, 
+                    index)
+                } 
+                //若是用户歌单
+                else {
+                    this.playSong(res.data.songUrl, 
+                    this.toPlayList[index].song.songName, 
+                    this.toPlayList[index].artist.singerName,
+                    this.toPlayList[index].album.albumName, 
+                    this.toPlayList[index].song.songId,
+                    this.toPlayList[index].song.songPic, 
+                    index)
+                }
             })
         },
         //打开登录框或用户框
@@ -408,35 +442,48 @@ export default {
             this.userFlag = false
             this.isLogin = false
             this.user.pic_url = require('../assets/images/user.png')
-            localStorage.removeItem('token')
-            localStorage.removeItem('username')
+            this.$cookies.remove("token");
+            this.$cookies.remove("username");
+            this.userPlaylist = []
+            this.userAlbum = []
+            this.$router.push('explore')
+            this.setMenuBtn(2)
         },
         //切换至随机播放模式或正常模式
         switchPlayMode(){
-            //随机模式
-            if(this.playModeFlag){
+            //切换至随机模式
+            if(this.isNormal){
                 this.randList.sort(this.random)
                 if(this.randList.length > 1 && this.randList.length <= 10){
                     while(JSON.stringify(this.randList) == JSON.stringify(this.regularList)){
                         this.randList.sort(this.random)
                     }
                 }
+                this.isNormal = false
+                this.isRandom = true
                 this.toPlayList = this.randList
                 this.tips = '随机播放'
             }
-            //顺序模式 
+            //切换至单曲循环 
+            else if(this.isRandom){
+                this.isRandom = false
+                this.isCircle = true
+                this.tips = '单曲循环'
+            }
+            //切换至顺序模式
             else {
+                this.isCircle = false
+                this.isNormal = true
                 this.toPlayList = this.regularList
                 this.tips = '顺序播放'
             }
             //获取当前歌曲索引: 解决 bac abc 问题
             for(let count = 0; count < this.toPlayList.length; count++){
-                if(this.audio.id == this.toPlayList[count].id){
+                if(this.audio.id === this.toPlayList[count].song.songId){
                     this.current = count
                     break
                 }
             }
-            this.playModeFlag = !this.playModeFlag
             clearTimeout(this.timer)
             this.isTipOpen = true
             this.timer = setTimeout(() => {
@@ -445,10 +492,9 @@ export default {
         },
         //设置待播列表
         setPl(playListDetail){
-            this.loadSongs = true
             this.regularList = this.deepClone(playListDetail)
             this.randList = this.deepClone(playListDetail)
-            if(this.playModeFlag){
+            if(this.isNormal){
                 this.toPlayList = this.regularList
             } else {
                 this.randList.sort(this.random)
@@ -486,7 +532,7 @@ export default {
                 else {
                     o = {};
                     for (var j in obj) {
-                    o[ j ] = this.deepClone(obj[ j ]);
+                        o[ j ] = this.deepClone(obj[ j ]);
                     }
                 }
                 }
@@ -500,32 +546,27 @@ export default {
         openList(){
             this.isListOpen = !this.isListOpen
         },
-        //添加至待播列表
-        addToList(item){
-            if(this.toPlayList.length === 0){
-                if(this.playModeFlag){
-                    this.toPlayList = this.regularList
-                } else {
-                    this.toPlayList = this.randList
-                }
-            }
-            let result = {
-                name: item.name,
-                ar: [{name: item.artists[0].name}]
-            }
-            this.regularList.push(result)
-            this.randList.push(result)
-        },
+        // //添加至待播列表
+        // addToList(item){
+        //     if(this.toPlayList.length === 0){
+        //         if(this.playModeFlag){
+        //             this.toPlayList = this.regularList
+        //         } else {
+        //             this.toPlayList = this.randList
+        //         }
+        //     }
+        //     let result = {
+        //         name: item.name,
+        //         ar: [{name: item.artists[0].name}]
+        //     }
+        //     this.regularList.push(result)
+        //     this.randList.push(result)
+        // },
         //清空待播列表
         clearList() {
-            this.loadSongs = false
             this.toPlayList = []
             // this.regularList = []
             // this.randList = []
-        },
-        //点击菜单按钮时改变样式
-        switchCss(n){
-            this.menuBtn = n
         },
         //登录成功
         logined(username){
@@ -538,6 +579,47 @@ export default {
             setTimeout(() => {
                 this.isTip2Open = false
             }, 3000);
+        },
+        //获取用户歌单
+        getUserPl(){
+            //获取用户歌单
+            this.$axios.get('/api/server/playlist.php', {
+                headers: {
+                    'Authorization': this.$cookies.get('token')        
+                }
+            })
+            .then(res => {
+                if(!res.data.playlists === null){
+                    this.userPlaylist = []
+                } else {
+                    this.userPlaylist = res.data.playlists
+                }
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        },
+        //新增歌单
+        newPl(result){
+            this.userPlaylist.push(result)
+        },
+        //设置当前的 menubtn
+        setMenuBtn(n){
+            this.menuBtn = n
+        },
+        getUserAlbum(){
+            this.$axios.get('/api/server/albumColl.php', {
+                headers: {
+                    'Authorization': this.$cookies.get('token')        
+                }
+            })
+            .then(res => {
+                if(res.data.collections === null){
+                    this.userAlbum = []
+                } else {
+                    this.userAlbum = res.data.collections
+                }
+            })
         }
     },
     watch: {
@@ -722,7 +804,7 @@ export default {
         border-radius: 8px;
     }
     .my-blur{
-        filter: blur(2px);
+        filter: blur(4px);
     }
     .song-field .default-img{
         float: left;
@@ -808,9 +890,6 @@ export default {
     .login-enter, .login-leave-to {
         opacity: 0;
     }
-    .my-blur{
-        filter: blur(2px);
-    }
     .to-play-list {
         width: 500px;
         height: 90vh;
@@ -856,7 +935,7 @@ export default {
         text-align: center;
         font-weight: bold;
         color: white;
-        background-color: #FA8072;
+        background-color: rgb(255, 99, 71);
         border-radius: 4px;
         cursor: pointer;
     }
